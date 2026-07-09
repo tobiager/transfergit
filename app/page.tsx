@@ -18,7 +18,7 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-12 lg:grid-cols-[3fr_2fr] lg:gap-8">
+        <div className="relative mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-12 self-center lg:grid-cols-[3fr_2fr] lg:gap-8">
           <div className="order-2 text-center lg:order-1 lg:text-left">
             <p className="font-display text-sm uppercase tracking-[0.3em] text-tm-blue-bright">
               Transfergit
@@ -47,10 +47,6 @@ export default function LandingPage() {
               <Link href="/torvalds" className="font-medium text-tm-blue-bright hover:underline">
                 torvalds
               </Link>{" "}
-              ·{" "}
-              <Link href="/gaearon" className="font-medium text-tm-blue-bright hover:underline">
-                gaearon
-              </Link>{" "}
               · or your own
               <span className="mx-2 text-border">|</span>
               <GeneratedCounter /> profiles scouted so far
@@ -62,7 +58,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <footer className="relative mt-16 flex flex-col items-center gap-1 text-sm text-muted">
+        <footer className="relative mt-auto flex flex-col items-center gap-1 pt-16 text-sm text-muted">
           <div className="flex items-center gap-3">
             <Link
               href="https://github.com/tobiager"
