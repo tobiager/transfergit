@@ -6,7 +6,7 @@ import Image from "next/image";
 type Variant = "full" | "compact";
 
 const VARIANT_META: Record<Variant, { path: string; width: number; height: number; label: string }> = {
-  full: { path: "", width: 1200, height: 630, label: "Full card" },
+  full: { path: "", width: 1200, height: 1300, label: "Full card" },
   compact: { path: "/card", width: 900, height: 1200, label: "Compact" },
 };
 
@@ -83,7 +83,7 @@ export function ExportPanel({
       )}
 
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-table text-lg font-bold uppercase tracking-wide">Exportar ficha</h2>
+        <h2 className="font-table text-lg font-bold uppercase tracking-wide">Export Card</h2>
         <div className="flex overflow-hidden rounded-md border border-border text-sm">
           {(Object.keys(VARIANT_META) as Variant[]).map((v) => (
             <button
@@ -102,14 +102,14 @@ export function ExportPanel({
 
       <div className="mb-4 flex justify-center overflow-hidden rounded-lg border border-border bg-surface-elevated p-2">
         <div
-          className={`relative ${variant === "full" ? "w-full max-w-2xl" : "w-full max-w-[220px]"}`}
+          className={`relative ${variant === "full" ? "w-full max-w-sm" : "w-full max-w-[220px]"}`}
           style={{ aspectRatio: `${meta.width} / ${meta.height}` }}
         >
           {!loaded[variant] && <div className="shimmer absolute inset-0 rounded" aria-hidden />}
           <Image
             key={variant}
             src={imagePath(variant)}
-            alt={`Preview de la ficha de ${login} (${meta.label})`}
+            alt={`Preview of ${login}'s card (${meta.label})`}
             width={meta.width}
             height={meta.height}
             unoptimized

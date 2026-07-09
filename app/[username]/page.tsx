@@ -9,6 +9,7 @@ import { PlayerDataCard } from "@/components/PlayerDataCard";
 import { TransferHistory } from "@/components/TransferHistory";
 import { InjuryHistory } from "@/components/InjuryHistory";
 import { ScoutingMetrics } from "@/components/ScoutingMetrics";
+import { TrophyCabinet } from "@/components/TrophyCabinet";
 import { ExportPanel } from "@/components/ExportPanel";
 import { ProfileReveal } from "@/components/ProfileReveal";
 import { SITE_URL } from "@/lib/site";
@@ -21,9 +22,9 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
-  const title = `${username} — Ficha de jugador | Transfergit`;
-  const description = `El perfil de GitHub de ${username} tasado como jugador de fútbol: valor de mercado, posición, temporadas y fichajes.`;
-  const ogImage = `${SITE_URL}/api/og/${username}`;
+  const title = `${username} — Player Card | Transfergit`;
+  const description = `${username}'s GitHub profile valued like a football player: market value, position, seasons and transfers.`;
+  const ogImage = `${SITE_URL}/api/og/${username}/social`;
 
   return {
     title,
@@ -57,15 +58,17 @@ export default async function PlayerPage({ params }: PageProps) {
         <div className="space-y-4 md:col-span-2">
           <PlayerHeader player={player} />
 
+          <TrophyCabinet player={player} />
+
           <ExportPanel login={player.login} marketValueFormatted={player.marketValueFormatted} />
 
           <div data-reveal="chart" className="rounded-xl tm-card p-4">
             <div className="mb-2 flex items-baseline justify-between px-1">
               <h2 className="font-table text-lg font-bold uppercase tracking-wide">
-                Evolución del valor de mercado
+                Market Value Evolution
               </h2>
               <p className="text-sm text-muted">
-                Récord: <span className="font-semibold text-gold">{player.recordValue.formatted}</span>{" "}
+                Record: <span className="font-semibold text-gold">{player.recordValue.formatted}</span>{" "}
                 ({player.recordValue.year})
               </p>
             </div>
