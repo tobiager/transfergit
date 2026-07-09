@@ -1,31 +1,40 @@
+import Image from "next/image";
 import type { Player } from "@/lib/types";
 
 export function PlayerDataCard({ player }: { player: Player }) {
-  const rows: Array<[string, string]> = [
-    ["Club actual", player.currentClub],
-    ["Fichado", player.joinedDate],
-    ["Contrato hasta", player.contractUntil],
-    ["F. Nacim./Edad", `${player.birthDate} (${player.age})`],
-    ["Lugar de nac.", player.birthPlace],
+  const rows: Array<[string, React.ReactNode]> = [
     [
-      "Nacionalidad",
-      player.nationalityName
-        ? `${player.nationalityFlag} ${player.nationalityName}`
-        : player.nationalityFlag,
+      "Current club",
+      <span key="club" className="flex items-center justify-end gap-2">
+        {player.currentClubAvatar && (
+          <Image
+            src={player.currentClubAvatar}
+            alt=""
+            width={18}
+            height={18}
+            className="rounded-sm"
+          />
+        )}
+        {player.currentClub}
+      </span>,
     ],
-    ["Agente", player.agent],
-    ["Proveedor", player.provider],
-    ["Pie hábil", player.position.foot],
+    ["Joined", player.joinedDate],
+    ["Date of birth / Age", `${player.birthDate} (${player.age})`],
+    ["Place of birth", player.birthPlace],
+    ["Nationality", `${player.nationalityFlag} ${player.nationalityName}`],
+    ["Agent", player.agent],
+    ["Preferred stack", player.provider],
+    ["Preferred foot", player.position.foot],
   ];
 
   return (
     <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
       <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Datos del jugador
+        Player Data
       </h2>
       <dl className="divide-y divide-border">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-4 px-4 py-2.5 text-sm">
+          <div key={label as string} className="flex justify-between gap-4 px-4 py-2.5 text-sm">
             <dt className="text-muted">{label}</dt>
             <dd className="text-right font-medium">{value}</dd>
           </div>

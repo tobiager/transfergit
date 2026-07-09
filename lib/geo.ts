@@ -1,7 +1,8 @@
-// Best-effort: mapea el campo "location" (texto libre) del perfil de GitHub
-// a una bandera + nombre de país. No es exhaustivo, cubre países comunes (en
-// inglés/español), códigos ISO2 sueltos, algunas ciudades, y el caso donde
-// GitHub ya devuelve directamente el emoji de bandera como location.
+// Best-effort: maps the GitHub profile's free-text "location" field to a
+// flag + country name. Not exhaustive — covers common countries (English/
+// Spanish spellings), loose ISO2 codes, some cities, US "City, ST" format,
+// and the case where GitHub already returns the flag emoji directly as the
+// location.
 
 const COUNTRY_TO_ISO: Record<string, string> = {
   argentina: "AR",
@@ -109,69 +110,69 @@ const COUNTRY_TO_ISO: Record<string, string> = {
 
 const ISO2_TO_NAME: Record<string, string> = {
   AR: "Argentina",
-  BR: "Brasil",
+  BR: "Brazil",
   CL: "Chile",
   UY: "Uruguay",
   PY: "Paraguay",
   BO: "Bolivia",
-  PE: "Perú",
+  PE: "Peru",
   CO: "Colombia",
   VE: "Venezuela",
   EC: "Ecuador",
-  MX: "México",
-  US: "Estados Unidos",
-  CA: "Canadá",
-  ES: "España",
+  MX: "Mexico",
+  US: "United States",
+  CA: "Canada",
+  ES: "Spain",
   PT: "Portugal",
-  FR: "Francia",
-  DE: "Alemania",
-  IT: "Italia",
-  GB: "Reino Unido",
-  IE: "Irlanda",
-  NL: "Países Bajos",
-  BE: "Bélgica",
-  CH: "Suiza",
+  FR: "France",
+  DE: "Germany",
+  IT: "Italy",
+  GB: "United Kingdom",
+  IE: "Ireland",
+  NL: "Netherlands",
+  BE: "Belgium",
+  CH: "Switzerland",
   AT: "Austria",
-  PL: "Polonia",
-  SE: "Suecia",
-  NO: "Noruega",
-  DK: "Dinamarca",
-  FI: "Finlandia",
-  RU: "Rusia",
-  UA: "Ucrania",
+  PL: "Poland",
+  SE: "Sweden",
+  NO: "Norway",
+  DK: "Denmark",
+  FI: "Finland",
+  RU: "Russia",
+  UA: "Ukraine",
   CN: "China",
-  JP: "Japón",
-  KR: "Corea del Sur",
+  JP: "Japan",
+  KR: "South Korea",
   IN: "India",
-  PK: "Pakistán",
+  PK: "Pakistan",
   BD: "Bangladesh",
   ID: "Indonesia",
   VN: "Vietnam",
-  TH: "Tailandia",
-  SG: "Singapur",
-  MY: "Malasia",
-  PH: "Filipinas",
+  TH: "Thailand",
+  SG: "Singapore",
+  MY: "Malaysia",
+  PH: "Philippines",
   AU: "Australia",
-  NZ: "Nueva Zelanda",
+  NZ: "New Zealand",
   IL: "Israel",
-  TR: "Turquía",
-  EG: "Egipto",
-  ZA: "Sudáfrica",
+  TR: "Turkey",
+  EG: "Egypt",
+  ZA: "South Africa",
   NG: "Nigeria",
-  KE: "Kenia",
-  MA: "Marruecos",
-  CZ: "República Checa",
-  GR: "Grecia",
-  RO: "Rumania",
-  HU: "Hungría",
+  KE: "Kenya",
+  MA: "Morocco",
+  CZ: "Czech Republic",
+  GR: "Greece",
+  RO: "Romania",
+  HU: "Hungary",
   CU: "Cuba",
   CR: "Costa Rica",
-  PA: "Panamá",
+  PA: "Panama",
   SV: "El Salvador",
   HN: "Honduras",
   NI: "Nicaragua",
   GT: "Guatemala",
-  DO: "República Dominicana",
+  DO: "Dominican Republic",
 };
 
 const CITY_TO_ISO: Record<string, string> = {
@@ -212,12 +213,6 @@ const CITY_TO_ISO: Record<string, string> = {
   londres: "GB",
   dublin: "IE",
   amsterdam: "NL",
-  "new york": "US",
-  "san francisco": "US",
-  seattle: "US",
-  austin: "US",
-  chicago: "US",
-  boston: "US",
   toronto: "CA",
   vancouver: "CA",
   moscow: "RU",
@@ -242,15 +237,86 @@ const CITY_TO_ISO: Record<string, string> = {
   johannesburg: "ZA",
 };
 
+// Top ~50 US tech-hub cities. Used both as bare city names and to recognize
+// the common GitHub "City, ST" location format (e.g. "Portland, OR").
+const US_TECH_CITIES = new Set([
+  "new york",
+  "san francisco",
+  "san jose",
+  "oakland",
+  "seattle",
+  "austin",
+  "chicago",
+  "boston",
+  "cambridge",
+  "los angeles",
+  "san diego",
+  "denver",
+  "boulder",
+  "portland",
+  "atlanta",
+  "dallas",
+  "houston",
+  "washington",
+  "washington dc",
+  "philadelphia",
+  "miami",
+  "phoenix",
+  "raleigh",
+  "durham",
+  "charlotte",
+  "nashville",
+  "minneapolis",
+  "detroit",
+  "pittsburgh",
+  "columbus",
+  "salt lake city",
+  "las vegas",
+  "sacramento",
+  "san antonio",
+  "orlando",
+  "tampa",
+  "kansas city",
+  "st louis",
+  "indianapolis",
+  "milwaukee",
+  "cincinnati",
+  "baltimore",
+  "richmond",
+  "new orleans",
+  "albuquerque",
+  "tucson",
+  "bellevue",
+  "redmond",
+  "irvine",
+  "santa clara",
+  "mountain view",
+  "palo alto",
+  "menlo park",
+  "sunnyvale",
+  "berkeley",
+  "brooklyn",
+  "jersey city",
+]);
+
+const US_STATE_ABBREVIATIONS = new Set([
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+  "DC",
+]);
+
 function isoToFlagEmoji(iso2: string): string {
   return iso2
     .toUpperCase()
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 }
 
-// Un emoji de bandera son dos "regional indicator symbols" (U+1F1E6-U+1F1FF).
-// Si el location ya viene como emoji (como pasa seguido en GitHub), lo
-// leemos directamente en vez de intentar matchear texto.
+// A flag emoji is two "regional indicator symbols" (U+1F1E6-U+1F1FF). If the
+// location already comes as an emoji (common on GitHub), read it directly
+// instead of trying to match text.
 const FLAG_EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}]{2}/u;
 
 function flagEmojiToIso(flag: string): string | null {
@@ -263,11 +329,23 @@ function flagEmojiToIso(flag: string): string | null {
     .join("");
 }
 
+// Recognizes the common US "City, ST" format (e.g. "Portland, OR").
+function isoFromUsCityState(text: string): string | null {
+  const match = text.match(/^\s*([a-zA-Z .]+?)\s*,\s*([a-zA-Z]{2})\s*$/);
+  if (!match) return null;
+  const state = match[2].toUpperCase();
+  if (US_STATE_ABBREVIATIONS.has(state)) return "US";
+  return null;
+}
+
 function isoFromFreeText(text: string): string | null {
   const normalized = text.toLowerCase().trim();
 
-  // Código ISO2 suelto ("AR", "US") como token exacto, no substring, para
-  // evitar falsos positivos con palabras cortas.
+  const usFromCityState = isoFromUsCityState(text);
+  if (usFromCityState) return usFromCityState;
+
+  // Bare ISO2 code ("AR", "US") as an exact token, not a substring, to avoid
+  // false positives with short words.
   const bareIso = text.trim().toUpperCase();
   if (/^[A-Z]{2}$/.test(bareIso) && ISO2_TO_NAME[bareIso]) return bareIso;
 
@@ -276,6 +354,9 @@ function isoFromFreeText(text: string): string | null {
   }
   for (const [city, iso] of Object.entries(CITY_TO_ISO)) {
     if (normalized.includes(city)) return iso;
+  }
+  for (const city of US_TECH_CITIES) {
+    if (normalized.includes(city)) return "US";
   }
   return null;
 }
@@ -286,7 +367,7 @@ export interface Nationality {
 }
 
 export function resolveNationality(location: string | null): Nationality {
-  if (!location) return { flag: "🌐", countryName: null };
+  if (!location) return { flag: "🌍", countryName: "Unknown" };
 
   const isoFromFlag = flagEmojiToIso(location);
   if (isoFromFlag && ISO2_TO_NAME[isoFromFlag]) {
@@ -295,19 +376,19 @@ export function resolveNationality(location: string | null): Nationality {
 
   const iso = isoFromFreeText(location);
   if (iso) {
-    return { flag: isoToFlagEmoji(iso), countryName: ISO2_TO_NAME[iso] ?? null };
+    return { flag: isoToFlagEmoji(iso), countryName: ISO2_TO_NAME[iso] ?? "Unknown" };
   }
 
-  return { flag: "🌐", countryName: null };
+  return { flag: "🌍", countryName: "Unknown" };
 }
 
 export function locationToFlag(location: string | null): string {
   return resolveNationality(location).flag;
 }
 
-// Texto a mostrar como "lugar de nacimiento": si el location del perfil es
-// directamente un emoji de bandera (sin texto), mostramos el nombre del país
-// en vez del emoji suelto o un código ISO.
+// Text shown as "place of birth": if the profile's location is directly a
+// flag emoji with no text, show the country name instead of the bare emoji
+// or an ISO code.
 export function resolveBirthPlace(location: string | null): string {
   if (!location) return "Localhost";
 
