@@ -1,5 +1,5 @@
-// Mismos tokens que app/globals.css, hardcodeados: Satori no lee custom
-// properties de una hoja de estilos externa.
+// Same tokens as app/globals.css, hardcoded: Satori doesn't read custom
+// properties from an external stylesheet.
 export const OG_COLORS = {
   pitch: "#0a0e1a",
   pitchElevated: "#141b2e",

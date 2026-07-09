@@ -1,16 +1,16 @@
 import type { RatingMetric } from "./types";
 import { formatNumber } from "./format";
 
-// Umbrales que representan "99/99" para cada métrica. Son arbitrarios pero
-// generosos: están pensados para que un perfil muy activo llegue cerca del
-// techo sin saturarlo todo en 99. Fácil de ajustar acá.
+// Thresholds representing "99/99" for each metric. Arbitrary but generous:
+// meant so a very active profile gets close to the ceiling without
+// saturating everything at 99. Easy to tune here.
 const THRESHOLDS = {
-  pace: 1_500, // commits en los últimos 12 meses
-  finishing: 200, // stars totales
-  passing: 150, // pull requests totales
-  vision: 100, // code reviews totales
-  stamina: 60, // racha más larga de días consecutivos con actividad
-  dribbling: 8, // cantidad de lenguajes distintos usados
+  pace: 1_500, // commits in the last 12 months
+  finishing: 200, // total stars
+  passing: 150, // total pull requests
+  vision: 100, // total code reviews
+  stamina: 60, // longest streak of consecutive active days
+  dribbling: 8, // count of distinct languages used
 };
 
 const MAX_SCORE = 99;
@@ -34,38 +34,38 @@ export function computeRatings(input: RatingsInput): RatingMetric[] {
   return [
     {
       key: "pace",
-      label: "Ritmo",
-      rawLabel: `${formatNumber(input.commitsLast12Months)} commits (12 meses)`,
+      label: "Pace",
+      rawLabel: `${formatNumber(input.commitsLast12Months)} commits (12 months)`,
       score: scoreFor(input.commitsLast12Months, THRESHOLDS.pace),
     },
     {
       key: "finishing",
-      label: "Definición",
-      rawLabel: `${formatNumber(input.starsTotal)} stars totales`,
+      label: "Finishing",
+      rawLabel: `${formatNumber(input.starsTotal)} total stars`,
       score: scoreFor(input.starsTotal, THRESHOLDS.finishing),
     },
     {
       key: "passing",
-      label: "Pase",
+      label: "Passing",
       rawLabel: `${formatNumber(input.pullRequestsTotal)} pull requests`,
       score: scoreFor(input.pullRequestsTotal, THRESHOLDS.passing),
     },
     {
       key: "vision",
-      label: "Visión",
+      label: "Vision",
       rawLabel: `${formatNumber(input.reviewsTotal)} code reviews`,
       score: scoreFor(input.reviewsTotal, THRESHOLDS.vision),
     },
     {
       key: "stamina",
-      label: "Resistencia",
-      rawLabel: `${formatNumber(input.longestStreakDays)} días de racha`,
+      label: "Stamina",
+      rawLabel: `${formatNumber(input.longestStreakDays)}-day streak`,
       score: scoreFor(input.longestStreakDays, THRESHOLDS.stamina),
     },
     {
       key: "dribbling",
-      label: "Regate",
-      rawLabel: `${formatNumber(input.languageCount)} lenguajes`,
+      label: "Dribbling",
+      rawLabel: `${formatNumber(input.languageCount)} languages`,
       score: scoreFor(input.languageCount, THRESHOLDS.dribbling),
     },
   ];

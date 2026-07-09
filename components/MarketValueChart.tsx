@@ -49,7 +49,7 @@ function RecordDot(props: { cx?: number; cy?: number; payload?: ChartPoint; reco
       />
       <circle cx={cx} cy={cy} r={3.5} fill="#ffc400" />
       <text x={cx} y={cy - 14} textAnchor="middle" fontSize={11} fontWeight={700} fill="#ffc400">
-        Récord
+        Record
       </text>
     </g>
   );
@@ -67,7 +67,7 @@ function ChartTooltip({
   const changeLabel =
     point.change === null
       ? ""
-      : ` · ${point.change >= 0 ? "+" : ""}${point.change.toFixed(0)}% interanual`;
+      : ` · ${point.change >= 0 ? "+" : ""}${point.change.toFixed(0)}% YoY`;
 
   return (
     <div className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm shadow-lg">
@@ -86,13 +86,13 @@ export function MarketValueChart({
   recordYear: number;
 }) {
   const data = buildChartData(history);
-  // Arranca sin animar (coincide con el SSR) y se activa tras montar si el
-  // usuario no pidió prefers-reduced-motion, evitando un mismatch de hidratación.
+  // Starts without animating (matches SSR) and activates after mount if
+  // the user didn't request prefers-reduced-motion, avoiding a hydration mismatch.
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con matchMedia, sin efecto adverso: solo activa la animación tras montar.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs with matchMedia, no adverse effect: only activates the animation after mount.
       setAnimate(true);
     }
   }, []);

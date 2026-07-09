@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { formatNumber } from "@/lib/format";
 
-// Sin analytics/DB todavía: es un contador decorativo, no una métrica real.
+// No analytics/DB yet: this is a decorative counter, not a real metric.
 const TOTAL_CARDS_GENERATED = 12_482;
 
 export function GeneratedCounter() {
@@ -12,7 +12,7 @@ export function GeneratedCounter() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con matchMedia tras montar; salta directo al valor final sin animar.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs with matchMedia after mount; jumps straight to the final value without animating.
       setDisplay(TOTAL_CARDS_GENERATED);
       return;
     }

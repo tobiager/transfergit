@@ -32,20 +32,20 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
   return (
     <div data-reveal="table" className="overflow-hidden rounded-xl tm-card">
       <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Estadísticas por temporada
+        Season Stats
       </h2>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-surface-elevated">
               <th className="font-table px-4 py-2 text-left align-bottom text-xs font-semibold uppercase tracking-wide text-muted">
-                Temporada
+                Season
               </th>
-              <Th term="Partidos" source="días activos" />
-              <Th term="Goles" source="commits" />
-              <Th term="Asistencias" source="pull requests" />
-              <Th term="Amarillas" source="issues" />
-              <Th term="Minutos" source="contribuciones" />
+              <Th term="Appearances" source="active days" />
+              <Th term="Goals" source="commits" />
+              <Th term="Assists" source="pull requests" />
+              <Th term="Yellow cards" source="issues" />
+              <Th term="Minutes" source="contributions" />
             </tr>
           </thead>
           <tbody>
@@ -60,7 +60,7 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
                 <td className="px-4 py-2 font-medium">
                   {s.year}
                   {!s.hasData && (
-                    <span className="ml-2 text-[10px] uppercase text-muted">cedido a préstamo</span>
+                    <span className="ml-2 text-[10px] uppercase text-muted">on loan</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">

@@ -2,18 +2,18 @@ import type { GithubProfile, MarketValuePoint } from "./types";
 import { calculateAgeYears, formatMarketValue } from "./format";
 
 // -----------------------------------------------------------------------
-// Fórmula de valor de mercado (fácil de ajustar: son todas constantes acá).
+// Market value formula (easy to tune: everything is a constant here).
 //
-//   valor = valorBase
-//         + commitsTotales      × 800
-//         + starsTotales        × 4_000
+//   value = baseValue
+//         + totalCommits        × 800
+//         + totalStars          × 4_000
 //         + followers           × 6_000
-//         + PRsTotales          × 2_500
-//         + reposConMasDe10Stars × 25_000
+//         + totalPRs            × 2_500
+//         + reposOver10Stars    × 25_000
 //
-//   × multiplicador de forma:  1 + min(commitsUltimos12Meses / 2000, 0.5)
-//   × multiplicador de edad:   cuentas < 2 años → 0.8 (joven promesa)
-//                              cuentas > 6 años → 1.1 (veterano)
+//   × form multiplier:  1 + min(commitsLast12Months / 2000, 0.5)
+//   × age multiplier:   accounts < 2 years → 0.8 (young prospect)
+//                        accounts > 6 years → 1.1 (veteran)
 // -----------------------------------------------------------------------
 
 const BASE_VALUE = 50_000;
@@ -71,10 +71,10 @@ export interface ValuationTimeline {
   record: { value: number; formatted: string; year: number };
 }
 
-// GitHub no expone stars/followers históricos, así que para años pasados
-// aproximamos usando el estado "hasta esa fecha": repos ya creados con su
-// conteo de stars actual, y followers actuales para todos los años. Es una
-// simplificación deliberada (documentada) apropiada para un proyecto meme.
+// GitHub doesn't expose historical stars/followers, so past years are
+// approximated using the "as of that date" state: repos already created
+// with their current star count, and current followers for every year.
+// A deliberate (documented) simplification, fitting for a meme project.
 export function computeValuationTimeline(profile: GithubProfile): ValuationTimeline {
   const createdYear = new Date(profile.createdAt).getFullYear();
   const years = profile.contributionsByYear.map((c) => c.year).sort((a, b) => a - b);

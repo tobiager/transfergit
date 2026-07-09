@@ -1,14 +1,14 @@
-// Formato de moneda estilo Transfermarkt en es-AR: "475 mil €" / "2,40 mill. €"
+// Transfermarkt-style currency formatting in English: "€475k" / "€2.40m"
 
-const NUMBER_FORMAT = new Intl.NumberFormat("es-AR");
-const DATE_FORMAT = new Intl.DateTimeFormat("es-AR", {
+const NUMBER_FORMAT = new Intl.NumberFormat("en-US");
+const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
   timeZone: "UTC",
 });
 
-const DATE_TIME_FORMAT = new Intl.DateTimeFormat("es-AR", {
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
@@ -25,19 +25,19 @@ export function formatMarketValue(rawValue: number): string {
   const rounded = roundMarketValue(Math.max(0, rawValue));
 
   if (rounded < 1_000_000) {
-    return `${rounded / 1000} mil €`;
+    return `€${rounded / 1000}k`;
   }
 
   const millions = rounded / 1_000_000;
-  return `${millions.toFixed(2).replace(".", ",")} mill. €`;
+  return `€${millions.toFixed(2)}m`;
 }
 
-// Formato compacto de un solo renglón para ejes de gráfico: "700K €", "1,4M €".
+// Single-line compact format for chart axes: "700K €", "1.4M €".
 export function formatCompactValue(value: number): string {
   if (value < 1_000_000) {
-    return `${Math.round(value / 1000)}K €`;
+    return `€${Math.round(value / 1000)}k`;
   }
-  return `${(value / 1_000_000).toFixed(1).replace(".", ",")}M €`;
+  return `€${(value / 1_000_000).toFixed(1)}m`;
 }
 
 export function formatNumber(value: number): string {
@@ -57,8 +57,8 @@ export interface MarketValueTrend {
   pct: number;
 }
 
-// Compara los últimos dos puntos de la evolución de valor para saber si mostrar
-// la flecha verde (o roja) de tendencia junto al valor de mercado.
+// Compares the last two points of the value evolution to decide whether to
+// show the green (or red) trend arrow next to the market value.
 export function computeMarketValueTrend(
   history: Array<{ value: number }>
 ): MarketValueTrend | null {

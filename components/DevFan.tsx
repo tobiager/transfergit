@@ -1,8 +1,8 @@
 import Image from "next/image";
 
-// Fichas pre-renderizadas una sola vez con nuestro propio endpoint OG y
-// guardadas como estáticas en /public — así el abanico de la landing no le
-// pega a la API de GitHub en cada visita.
+// Cards pre-rendered once with our own OG endpoint and saved as static
+// assets in /public — so the landing fan never hits the GitHub API on
+// every visit.
 const FAN_CARDS = [
   { username: "torvalds", rotation: -8 },
   { username: "mojombo", rotation: -3 },
@@ -21,14 +21,15 @@ export function DevFan() {
           className={`relative w-[150px] shrink-0 sm:w-[180px] ${i > 0 ? "-ml-14 sm:-ml-16" : ""}`}
           style={{ zIndex: i }}
         >
-          {/* Hover lift vive en un hijo separado: GSAP controla el transform
-              (rotation) de este div padre, y Tailwind controla el transform
-              (translate/scale) del hijo — así no compiten por la misma propiedad. */}
+          {/* Hover lift lives in a separate child: GSAP controls the
+              transform (rotation) of this parent div, and Tailwind controls
+              the transform (translate/scale) of the child — so they don't
+              compete for the same property. */}
           <div className="group/card transition-transform duration-300 ease-out hover:z-20 hover:-translate-y-5 hover:scale-110">
             <div className="overflow-hidden rounded-xl shadow-[0_8px_16px_rgba(0,0,0,0.4),0_24px_48px_-16px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-shadow duration-300 group-hover/card:shadow-[0_16px_32px_rgba(0,0,0,0.5),0_40px_70px_-16px_rgba(0,0,0,0.75)]">
               <Image
                 src={`/fan-cards/${card.username}.png`}
-                alt={`Ficha de ${card.username}`}
+                alt={`${card.username}'s player card`}
                 width={340}
                 height={453}
                 className="h-auto w-full"

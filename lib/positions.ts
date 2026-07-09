@@ -1,17 +1,17 @@
 import type { GithubRepo, PlayerPosition } from "./types";
 
-// Mapeo lenguaje → categoría táctica. Todo ponderado por stars de los repos.
+// Language → tactical category mapping. Everything weighted by repo stars.
 type Category = "frontend" | "backend" | "devops" | "dataml" | "mobile";
 
 const CATEGORY_LABEL: Record<Category, string> = {
-  frontend: "Extremo derecho",
-  backend: "Mediocentro",
-  devops: "Arquero",
-  dataml: "Pivote",
-  mobile: "Lateral",
+  frontend: "Right Winger",
+  backend: "Central Midfielder",
+  devops: "Goalkeeper",
+  dataml: "Defensive Midfielder",
+  mobile: "Full-Back",
 };
 
-const FULLSTACK_LABEL = "Mediapunta";
+const FULLSTACK_LABEL = "Attacking Midfielder";
 
 const FRONTEND_LANGS = new Set([
   "JavaScript",
@@ -41,14 +41,14 @@ const MOBILE_LANGS = new Set(["Swift", "Kotlin", "Dart", "Objective-C"]);
 
 const DATAML_LANGS = new Set(["Jupyter Notebook", "R"]);
 
-// Lenguajes de marcado/notebook: cuentan para la categoría táctica (ej. HTML
-// suma a "frontend"), pero nunca deberían ganar como "lenguaje principal"
-// (Proveedor / pie hábil) porque no reflejan una decisión de stack real.
+// Markup/notebook languages: count toward the tactical category (e.g. HTML
+// adds to "frontend"), but should never win as the "main language"
+// (Preferred stack / preferred foot) because they don't reflect a real
+// stack decision.
 const EXCLUDED_FROM_TOP_LANGUAGE = new Set(["HTML", "CSS", "SCSS", "Jupyter Notebook"]);
 
-// Lenguajes "tipados" → pie derecho (chiste: rigor del compilador = pierna
-// hábil dominante). Lenguajes dinámicos → pie izquierdo. Es un chiste, no una
-// afirmación técnica seria.
+// "Typed" languages → right foot (joke: compiler rigor = dominant foot).
+// Dynamic languages → left foot. It's a joke, not a serious technical claim.
 const TYPED_LANGS = new Set([
   "TypeScript",
   "Java",
@@ -92,7 +92,7 @@ export function computePosition(repos: GithubRepo[]): PositionResult {
 
   for (const repo of repos) {
     if (!repo.language) continue;
-    // +1 para que repos sin stars también cuenten en la distribución de lenguajes.
+    // +1 so repos without stars also count toward the language distribution.
     const weight = repo.stars + 1;
 
     languageWeights.set(repo.language, (languageWeights.get(repo.language) ?? 0) + weight);
@@ -122,8 +122,8 @@ export function computePosition(repos: GithubRepo[]): PositionResult {
     const [topCategory, topWeight] = sortedCategories[0];
     const second = sortedCategories[1];
 
-    // Fullstack: frontend y backend son los dos rubros dominantes y están
-    // parejos (ninguno se lleva más del 65% del total ponderado).
+    // Fullstack: frontend and backend are the two dominant categories and
+    // are close (neither takes more than 65% of the total weight).
     const isFrontendBackendMix =
       (topCategory === "frontend" || topCategory === "backend") &&
       second &&
@@ -139,13 +139,13 @@ export function computePosition(repos: GithubRepo[]): PositionResult {
     }
   }
 
-  const foot = TYPED_LANGS.has(topLanguage) ? "Derecho" : "Izquierdo";
+  const foot = TYPED_LANGS.has(topLanguage) ? "Right" : "Left";
 
   return { position: { main, secondary, foot }, topLanguage };
 }
 
-// Cantidad de lenguajes "reales" distintos usados (excluye marcado/notebook),
-// usada para la métrica "Regate" y el scout report.
+// Count of distinct "real" languages used (excludes markup/notebook), used
+// for the "Dribbling" metric and the scout report.
 export function countDistinctLanguages(repos: GithubRepo[]): number {
   const languages = new Set(
     repos
@@ -155,9 +155,9 @@ export function countDistinctLanguages(repos: GithubRepo[]): number {
   return languages.size;
 }
 
-// Lenguaje dominante (por stars) entre los repos creados en un año puntual.
-// Se usa para reconstruir "cambios de lenguaje dominante" temporada a
-// temporada en el historial de fichajes.
+// Dominant language (by stars) among repos created in a given year. Used to
+// reconstruct "dominant language changes" season by season in the transfer
+// history.
 export function dominantLanguageForRepos(repos: GithubRepo[]): string | null {
   const weights = new Map<string, number>();
   for (const repo of repos) {
