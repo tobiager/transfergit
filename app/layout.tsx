@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Archivo, Archivo_Black, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
+import { Navbar } from "@/components/Navbar";
+import { ValuationModal } from "@/components/ValuationModal";
+import { ValuationModalProvider } from "@/components/ValuationModalContext";
 
 const display = Archivo_Black({
   variable: "--font-display",
@@ -21,9 +24,9 @@ const body = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "Transfergit — Tu GitHub, tasado como jugador de fútbol",
+  title: "Transfergit — Your GitHub, valued like a football player",
   description:
-    "Convertí cualquier perfil de GitHub en una ficha de jugador estilo Transfermarkt: valor de mercado, posición, temporadas, fichajes y lesiones.",
+    "Turn any GitHub profile into a Transfermarkt-style player card: market value, position, seasons, transfers and injuries.",
 };
 
 export default function RootLayout({
@@ -33,11 +36,15 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${display.variable} ${table.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-pitch text-foreground">
-        {children}
+      <body className="min-h-dvh flex flex-col bg-pitch text-foreground">
+        <ValuationModalProvider>
+          <Navbar />
+          {children}
+          <ValuationModal />
+        </ValuationModalProvider>
       </body>
     </html>
   );

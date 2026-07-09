@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { formatMarketValue } from "@/lib/format";
 import type { MarketValueTrend } from "@/lib/format";
-import { HowItWorksModal } from "./HowItWorksModal";
+import { useValuationModal } from "./ValuationModalContext";
 
 export function MarketValueBox({
   value,
@@ -18,10 +18,11 @@ export function MarketValueBox({
   trend?: MarketValueTrend | null;
 }) {
   const [display, setDisplay] = useState(0);
+  const { openModal } = useValuationModal();
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con matchMedia tras montar; salta directo al valor final sin animar.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs with matchMedia after mount; jumps straight to the final value without animating.
       setDisplay(value);
       return;
     }
@@ -47,7 +48,7 @@ export function MarketValueBox({
       />
       <div className="rounded-lg border border-white/[0.08] bg-gradient-to-br from-tm-blue to-tm-blue-deep px-6 py-4 shadow-[0_2px_6px_rgba(0,0,0,0.5),0_18px_36px_-16px_rgba(0,0,0,0.65)]">
         <p className="font-table text-xs font-semibold uppercase tracking-wider text-tm-blue-bright/80">
-          {label ?? "Valor de mercado"}
+          {label ?? "Market Value"}
         </p>
         <div className="flex items-baseline gap-2">
           <p className="whitespace-nowrap font-display text-3xl leading-none text-white tabular-nums sm:text-4xl">
@@ -65,9 +66,15 @@ export function MarketValueBox({
         </div>
         <div className="mt-1.5 flex items-center justify-between gap-3">
           {updatedAt && (
-            <p className="text-[11px] text-tm-blue-bright/70">Última revisión: {updatedAt}</p>
+            <p className="text-[11px] text-tm-blue-bright/70">Last update: {updatedAt}</p>
           )}
-          <HowItWorksModal />
+          <button
+            type="button"
+            onClick={openModal}
+            className="text-[11px] font-medium text-tm-blue-bright/90 underline-offset-2 hover:underline"
+          >
+            how is this calculated? ↗
+          </button>
         </div>
       </div>
     </div>
