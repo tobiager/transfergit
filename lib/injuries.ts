@@ -4,15 +4,15 @@ import { formatDate } from "./format";
 const MIN_GAP_DAYS = 14;
 
 const INJURY_NAMES = [
-  "Burnout agudo",
-  "Rotura del ligamento del deploy",
-  "Sobrecarga de reuniones",
-  "Lesión por rebase",
-  "Fatiga de code review",
+  "Acute burnout",
+  "Torn deploy ligament",
+  "Meeting overload",
+  "Rebase injury",
+  "Code review fatigue",
 ];
 
-// Detecta gaps de 14+ días consecutivos sin ninguna contribución en el
-// último año, y los presenta como "lesiones" del jugador.
+// Detects gaps of 14+ consecutive days with no contributions in the last
+// year, and presents them as the player's "injuries".
 export function detectInjuries(calendar: ContributionDay[]): Injury[] {
   const days = [...calendar].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -48,14 +48,33 @@ export function detectInjuries(calendar: ContributionDay[]): Injury[] {
   return injuries;
 }
 
+// Longest run of consecutive zero-contribution days in the window, with no
+// minimum threshold (unlike detectInjuries' 14-day cutoff). Used by the
+// Acute Burnout achievement (30+ day gap).
+export function computeMaxGapDays(calendar: ContributionDay[]): number {
+  const days = [...calendar].sort((a, b) => a.date.localeCompare(b.date));
+
+  let longest = 0;
+  let running = 0;
+  for (const day of days) {
+    if (day.count === 0) {
+      running++;
+      longest = Math.max(longest, running);
+    } else {
+      running = 0;
+    }
+  }
+  return longest;
+}
+
 export interface StreakInfo {
   longest: number;
   current: number;
 }
 
-// Racha más larga de días consecutivos con al menos una contribución en el
-// último año, y la racha vigente (contando hacia atrás desde el día más
-// reciente con datos).
+// Longest streak of consecutive days with at least one contribution in the
+// last year, and the current streak (counting back from the most recent
+// day with data).
 export function computeStreaks(calendar: ContributionDay[]): StreakInfo {
   const days = [...calendar].sort((a, b) => a.date.localeCompare(b.date));
 

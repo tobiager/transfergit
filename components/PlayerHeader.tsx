@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Player } from "@/lib/types";
-import { formatNumber, computeMarketValueTrend } from "@/lib/format";
+import { computeMarketValueTrend } from "@/lib/format";
 import { MarketValueBox } from "./MarketValueBox";
 import { TiltCard } from "./TiltCard";
 
@@ -46,13 +46,6 @@ export function PlayerHeader({ player }: { player: Player }) {
           {player.bio && (
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted md:mx-0">{player.bio}</p>
           )}
-
-          <div className="mt-5 flex flex-wrap justify-center gap-5 md:justify-start">
-            <Trophy icon="⭐" label="Stars" value={player.trophies.stars} />
-            <Trophy icon="🍴" label="Forks" value={player.trophies.forks} />
-            <Trophy icon="📦" label="Repos" value={player.trophies.repos} />
-            <Trophy icon="👥" label="Followers" value={player.trophies.followers} />
-          </div>
         </div>
 
         <div className="w-full md:w-auto">
@@ -64,19 +57,5 @@ export function PlayerHeader({ player }: { player: Player }) {
         </div>
       </div>
     </TiltCard>
-  );
-}
-
-function Trophy({ icon, label, value }: { icon: string; label: string; value: number }) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-tm-blue-bright/40 bg-surface-elevated text-2xl shadow-inner shadow-tm-blue-deep/40">
-        {icon}
-      </div>
-      <span className="font-display text-lg font-bold leading-none tabular-nums">
-        {formatNumber(value)}
-      </span>
-      <span className="text-[11px] uppercase tracking-wide text-muted">{label}</span>
-    </div>
   );
 }

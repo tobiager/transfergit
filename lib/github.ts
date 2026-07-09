@@ -9,7 +9,7 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     throw new Error(
-      "Falta la variable de entorno GITHUB_TOKEN. Copiá .env.example a .env.local y completá un Personal Access Token."
+      "Missing GITHUB_TOKEN environment variable. Copy .env.example to .env.local and fill in a Personal Access Token."
     );
   }
 
@@ -24,7 +24,7 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
   });
 
   if (!res.ok) {
-    throw new Error(`GitHub GraphQL respondió ${res.status}: ${await res.text()}`);
+    throw new Error(`GitHub GraphQL responded ${res.status}: ${await res.text()}`);
   }
 
   const json = await res.json();
@@ -39,9 +39,9 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
   return json.data as T;
 }
 
-// La API de contributionsCollection solo acepta rangos de máximo un año,
-// así que pedimos un alias por cada año calendario desde la creación de la
-// cuenta hasta hoy, todo en una misma request.
+// The contributionsCollection API only accepts ranges of at most one year,
+// so we request one alias per calendar year from account creation until
+// today, all in a single request.
 function buildYearAlias(year: number, isCurrentYear: boolean) {
   const from = `${year}-01-01T00:00:00Z`;
   const to = isCurrentYear
@@ -61,8 +61,8 @@ function buildYearAlias(year: number, isCurrentYear: boolean) {
   `;
 }
 
-// Ventana rodante de los últimos 365 días para detectar "lesiones" (gaps sin
-// contribuciones) con granularidad diaria.
+// Rolling 365-day window to detect "injuries" (gaps with no contributions)
+// at daily granularity.
 const LAST_YEAR_ALIAS = `
   lastYear: contributionsCollection(from: $lastYearFrom, to: $lastYearTo) {
     totalCommitContributions
@@ -81,7 +81,17 @@ interface CreatedAtResponse {
   user: { createdAt: string } | null;
 }
 
+interface SearchIssueCount {
+  issueCount: number;
+}
+
+interface PullRequestSearchResult extends SearchIssueCount {
+  nodes: Array<{ repository?: { stargazerCount: number } }>;
+}
+
 interface FullProfileResponse {
+  externalMergedPRs: PullRequestSearchResult;
+  closedIssues: SearchIssueCount;
   user: {
     login: string;
     name: string | null;
@@ -146,8 +156,25 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
     const oneYearAgo = new Date(now);
     oneYearAgo.setFullYear(now.getFullYear() - 1);
 
+    // Achievement-only signals (Open Source Hero, World Cup Player, Bug
+    // Catcher): merged PRs / closed issues authored by the user outside of
+    // their own repos. Cheaper as a search query than paginating every PR.
+    const prSearch = `is:pr is:merged author:${login} -user:${login}`;
+    const issueSearch = `is:issue is:closed author:${login}`;
+
     const query = `
-      query($login: String!, $lastYearFrom: DateTime!, $lastYearTo: DateTime!) {
+      query($login: String!, $lastYearFrom: DateTime!, $lastYearTo: DateTime!, $prSearch: String!, $issueSearch: String!) {
+        externalMergedPRs: search(query: $prSearch, type: ISSUE, first: 50) {
+          issueCount
+          nodes {
+            ... on PullRequest {
+              repository { stargazerCount }
+            }
+          }
+        }
+        closedIssues: search(query: $issueSearch, type: ISSUE, first: 1) {
+          issueCount
+        }
         user(login: $login) {
           login
           name
@@ -184,6 +211,8 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       login,
       lastYearFrom: oneYearAgo.toISOString(),
       lastYearTo: now.toISOString(),
+      prSearch,
+      issueSearch,
     });
 
     if (!data.user) return null;
@@ -223,6 +252,11 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
         }))
     );
 
+    const maxExternalPRRepoStars = data.externalMergedPRs.nodes.reduce(
+      (max, node) => Math.max(max, node.repository?.stargazerCount ?? 0),
+      0
+    );
+
     const profile: GithubProfile = {
       login: user.login,
       name: user.name,
@@ -241,6 +275,9 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       contributionsByYear,
       lastYearCalendar,
       lastYearCommits: user.lastYear.totalCommitContributions,
+      externalMergedPRs: data.externalMergedPRs.issueCount,
+      maxExternalPRRepoStars,
+      closedIssues: data.closedIssues.issueCount,
     };
 
     return profile;

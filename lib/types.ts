@@ -45,6 +45,9 @@ export interface GithubProfile {
   contributionsByYear: YearContribution[];
   lastYearCalendar: ContributionDay[];
   lastYearCommits: number;
+  externalMergedPRs: number;
+  maxExternalPRRepoStars: number;
+  closedIssues: number;
 }
 
 export interface MarketValuePoint {
@@ -90,20 +93,40 @@ export interface RatingMetric {
   score: number;
 }
 
+// Derived stats consumed by lib/achievements.ts. Computed once in player.ts
+// so achievement rules stay pure functions over plain data.
+export interface AchievementStats {
+  maxRepoStars: number;
+  totalForks: number;
+  languageCount: number;
+  externalMergedPRs: number;
+  maxExternalPRRepoStars: number;
+  closedIssues: number;
+  followers: number;
+  longestStreakDays: number;
+  publicRepos: number;
+  accountAgeYears: number;
+  maxCommitsInYear: number;
+  maxCommitsYear: number;
+  maxInactivityGapDays: number;
+  hadLoanSpell: boolean;
+  hasFridayEveningCommit: boolean;
+}
+
 export interface Player {
   login: string;
   name: string;
   avatarUrl: string;
   bio: string | null;
   currentClub: string;
+  currentClubAvatar: string | null;
   joinedDate: string;
   joinedYear: number;
-  contractUntil: string;
   birthDate: string;
   age: number;
   birthPlace: string;
   nationalityFlag: string;
-  nationalityName: string | null;
+  nationalityName: string;
   agent: string;
   provider: string;
   position: PlayerPosition;
@@ -116,6 +139,7 @@ export interface Player {
     repos: number;
     followers: number;
   };
+  achievementStats: AchievementStats;
   marketValue: number;
   marketValueFormatted: string;
   marketValueHistory: MarketValuePoint[];
