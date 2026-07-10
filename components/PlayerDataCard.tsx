@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Player } from "@/lib/types";
 import { Flag } from "./Flag";
+import { SectionHeader } from "./SectionHeader";
 
 export function PlayerDataCard({ player }: { player: Player }) {
   const rows: Array<[string, React.ReactNode]> = [
@@ -36,14 +37,12 @@ export function PlayerDataCard({ player }: { player: Player }) {
 
   return (
     <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
-      <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Player Data
-      </h2>
+      <SectionHeader title="Player Data" />
       <dl className="divide-y divide-border">
         {rows.map(([label, value]) => (
-          <div key={label as string} className="flex justify-between gap-4 px-4 py-2.5 text-sm">
+          <div key={label as string} className="flex h-11 items-center justify-between gap-4 px-4 text-sm">
             <dt className="text-muted">{label}</dt>
-            <dd className="text-right font-medium">{value}</dd>
+            <dd className="text-right font-medium tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>

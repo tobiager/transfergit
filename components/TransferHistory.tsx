@@ -1,11 +1,10 @@
 import type { Player } from "@/lib/types";
+import { SectionHeader } from "./SectionHeader";
 
 export function TransferHistory({ transfers }: { transfers: Player["transfers"] }) {
   return (
     <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
-      <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Transfer History
-      </h2>
+      <SectionHeader title="Transfer History" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -20,11 +19,11 @@ export function TransferHistory({ transfers }: { transfers: Player["transfers"] 
             {transfers.map((t, i) => (
               <tr
                 key={`${t.season}-${i}`}
-                className={`transition-colors hover:bg-tm-blue-bright/10 ${
+                className={`h-11 transition-colors hover:bg-tm-blue-bright/10 ${
                   i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40"
                 }`}
               >
-                <td className="px-4 py-2 font-medium">{t.season}</td>
+                <td className="px-4 py-2 font-medium tabular-nums">{t.season}</td>
                 <td className="px-4 py-2 text-muted">{t.from}</td>
                 <td className="px-4 py-2 font-medium">{t.to}</td>
                 <td className="px-4 py-2 text-right font-semibold tabular-nums text-value-green">

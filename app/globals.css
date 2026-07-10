@@ -105,6 +105,17 @@ body {
   font-family: var(--font-table), sans-serif;
 }
 
+body,
+.tm-card {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+:focus-visible {
+  outline: 2px solid var(--tm-blue-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .tm-card {
   border: 1px solid var(--card-border);
   background: var(--surface);

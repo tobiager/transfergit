@@ -1,5 +1,6 @@
 import type { Player } from "@/lib/types";
 import { formatNumber } from "@/lib/format";
+import { SectionHeader } from "./SectionHeader";
 
 function Th({ term, source, align = "right" }: { term: string; source: string; align?: "left" | "right" }) {
   return (
@@ -31,9 +32,7 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
 
   return (
     <div data-reveal="table" className="overflow-hidden rounded-xl tm-card">
-      <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Season Stats
-      </h2>
+      <SectionHeader title="Season Stats" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -54,7 +53,7 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
                 key={s.year}
                 data-reveal-row
                 className={
-                  "transition-colors hover:bg-tm-blue-bright/10 " +
+                  "h-11 transition-colors hover:bg-tm-blue-bright/10 " +
                   (i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40") +
                   (s.hasData ? "" : " opacity-60")
                 }

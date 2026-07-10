@@ -1,11 +1,10 @@
 import type { RatingMetric } from "@/lib/types";
+import { SectionHeader } from "./SectionHeader";
 
 export function ScoutingMetrics({ ratings }: { ratings: RatingMetric[] }) {
   return (
     <div data-reveal="scouting" className="overflow-hidden rounded-xl tm-card">
-      <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Scouting metrics
-      </h2>
+      <SectionHeader title="Scouting metrics" />
       <div className="space-y-3 p-4">
         {ratings.map((rating) => (
           <div key={rating.key} data-reveal-row>

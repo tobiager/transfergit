@@ -1,12 +1,11 @@
 import type { Player } from "@/lib/types";
 import { PositionPitch } from "./PositionPitch";
+import { SectionHeader } from "./SectionHeader";
 
 export function PositionDetailCard({ position }: { position: Player["position"] }) {
   return (
     <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
-      <h2 className="bg-tm-blue-deep px-4 py-2 font-table text-lg font-bold uppercase tracking-wide text-white">
-        Position in Detail
-      </h2>
+      <SectionHeader title="Position in Detail" />
       <div className="p-4">
         <div className="mx-auto max-w-[180px]">
           <PositionPitch main={position.main} secondary={position.secondary} />
