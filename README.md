@@ -20,12 +20,20 @@ Probalo con [`/torvalds`](https://transfergit.com/torvalds), [`/gaearon`](https:
 
 No hay inputs manuales ni ediciones: todo se lee en vivo de tu perfil público.
 
+## Funcionalidades destacadas
+
+- **Trophy Cabinet** (`lib/achievements.ts`, `components/TrophyCabinetGrid.tsx`): 14 logros tipados por reglas (Repositorios, Impacto, Carrera, Historial Médico, Cultura Dev), con tiers squad/international/ballon-dor. Los bloqueados muestran progreso en escala de grises; los de tier ballon-dor tienen glow dorado pulsante.
+- **Ranking** (`lib/ranking.ts`, `components/RankingCircles.tsx`): compara tu valor de mercado contra un dataset de referencia de perfiles reales de GitHub (regenerable con `scripts/generate-reference-dataset.ts`).
+- **Position in Detail** (`components/PositionPitch.tsx`, `PositionDetailCard.tsx`): mini-cancha que ubica tu posición futbolera según el lenguaje/categoría dominante.
+- **Tema claro/oscuro** vía `next-themes` (`components/ThemeProvider.tsx`).
+
 ## Stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS v4** (tokens de diseño vía `@theme inline` en `app/globals.css`, sin `tailwind.config`)
 - **GSAP** para las animaciones de entrada (reveal del perfil y de la landing)
 - **Recharts** para el gráfico de evolución de valor de mercado
+- **next-themes** para el toggle de tema claro/oscuro
 - **next/og** (`ImageResponse`, Satori) para los endpoints de exportación de imagen — corren en Edge Runtime
 - Fuentes: **Archivo Black** / **Archivo** / **Barlow Condensed**, cargadas con `next/font/google` en la web y como buffers `.ttf` propios (`assets/fonts/`) para Satori
 
