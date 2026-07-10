@@ -63,11 +63,9 @@ export function NavbarClient({ stars }: { stars: number | null }) {
       <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6">
         <Link
           href="/"
-          className="flex items-center gap-2 font-display text-sm uppercase tracking-wide text-foreground transition hover:text-tm-blue-bright"
+          className="flex items-center font-display text-sm uppercase tracking-wide text-tm-blue-bright transition hover:text-foreground"
         >
-          <span aria-hidden>←</span>
-          <span>GET SCOUTED</span>
-          <span className="ml-2 hidden text-tm-blue-bright sm:inline">Transfergit</span>
+          Transfergit
         </Link>
 
         <div className="flex items-center gap-4 text-sm">
