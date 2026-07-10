@@ -125,8 +125,8 @@ export interface Player {
   birthDate: string;
   age: number;
   birthPlace: string;
-  nationalityFlag: string;
   nationalityName: string;
+  nationalityIso2: string | null;
   agent: string;
   provider: string;
   position: PlayerPosition;

@@ -1,4 +1,4 @@
-// Transfermarkt-style currency formatting in English: "€475k" / "€2.40m"
+// Transfermarkt-style currency formatting in English: "€850k" / "€2.50m" / "€1.20bn"
 
 const NUMBER_FORMAT = new Intl.NumberFormat("en-US");
 const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
@@ -17,7 +17,7 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
 });
 
 export function roundMarketValue(value: number): number {
-  const step = value < 1_000_000 ? 25_000 : 100_000;
+  const step = value < 1_000_000 ? 25_000 : value < 1_000_000_000 ? 100_000 : 10_000_000;
   return Math.round(value / step) * step;
 }
 
@@ -28,16 +28,22 @@ export function formatMarketValue(rawValue: number): string {
     return `€${rounded / 1000}k`;
   }
 
-  const millions = rounded / 1_000_000;
-  return `€${millions.toFixed(2)}m`;
+  if (rounded < 1_000_000_000) {
+    return `€${(rounded / 1_000_000).toFixed(2)}m`;
+  }
+
+  return `€${(rounded / 1_000_000_000).toFixed(2)}bn`;
 }
 
-// Single-line compact format for chart axes: "700K €", "1.4M €".
+// Single-line compact format for chart axes: "€700k", "€1.4m", "€1.5bn".
 export function formatCompactValue(value: number): string {
   if (value < 1_000_000) {
     return `€${Math.round(value / 1000)}k`;
   }
-  return `€${(value / 1_000_000).toFixed(1)}m`;
+  if (value < 1_000_000_000) {
+    return `€${(value / 1_000_000).toFixed(1)}m`;
+  }
+  return `€${(value / 1_000_000_000).toFixed(1)}bn`;
 }
 
 export function formatNumber(value: number): string {

@@ -5,6 +5,7 @@ import { buildSparklinePaths } from "../../_shared/sparkline";
 import { OG_COLORS as C } from "../../_shared/theme";
 import { topUnlockedTrophies } from "../../_shared/trophies";
 import { TrophySilhouette } from "../../_shared/TrophySilhouette";
+import { OgFlag } from "../../_shared/OgFlag";
 
 export const runtime = "edge";
 
@@ -100,7 +101,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 >
                   {player.position.main}
                 </div>
-                <div style={{ display: "flex", fontSize: 30, marginLeft: 16 }}>{player.nationalityFlag}</div>
+                <div style={{ display: "flex", marginLeft: 16 }}>
+                  <OgFlag iso2={player.nationalityIso2} size={30} />
+                </div>
                 <div style={{ display: "flex", fontSize: 22, color: C.muted, marginLeft: 12 }}>
                   {player.currentClub}
                 </div>
@@ -155,7 +158,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
         >
           {trophies.map((trophy) => (
             <div key={trophy.id} style={{ display: "flex", flexDirection: "row", alignItems: "center", flex: 1 }}>
-              <TrophySilhouette tier={trophy.tier} size={30} />
+              <TrophySilhouette id={trophy.id} size={30} />
               <div style={{ display: "flex", fontSize: 16, color: C.muted, marginLeft: 10 }}>{trophy.name}</div>
             </div>
           ))}

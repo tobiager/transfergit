@@ -3,7 +3,13 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+// Per-section scroll reveals: each [data-reveal] / [data-reveal-item] block
+// fades + rises 24px once it's 20% into the viewport (not on every scroll),
+// staggering its own [data-reveal-row] children. Rating bars still fill to
+// their score at the same moment. Animates only opacity/transform/width so
+// nothing shifts layout.
 export function ProfileReveal({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -11,48 +17,65 @@ export function ProfileReveal({ children }: { children: ReactNode }) {
     const container = containerRef.current;
     if (!container) return;
 
-    const header = container.querySelector('[data-reveal="header"]');
-    const share = container.querySelector('[data-reveal="share"]');
-    const chart = container.querySelector('[data-reveal="chart"]');
-    const scouting = container.querySelector('[data-reveal="scouting"]');
-    const table = container.querySelector('[data-reveal="table"]');
-    const sidebarItems = container.querySelectorAll("[data-reveal-item]");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const sections = container.querySelectorAll<HTMLElement>("[data-reveal], [data-reveal-item]");
     const bars = container.querySelectorAll<HTMLElement>("[data-reveal-bar]");
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
     if (reduceMotion) {
-      gsap.set([header, share, chart, scouting, table, ...sidebarItems], { opacity: 1, y: 0 });
+      gsap.set(sections, { opacity: 1, y: 0 });
       bars.forEach((bar) => {
         bar.style.width = `${bar.dataset.score}%`;
       });
       return;
     }
 
-    const targets = [header, share, chart, scouting, table, ...sidebarItems].filter(Boolean);
-    gsap.set(targets, { opacity: 0, y: 20 });
-    gsap.set(bars, { width: 0 });
+    gsap.registerPlugin(ScrollTrigger);
+    const triggers: ScrollTrigger[] = [];
 
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    sections.forEach((section, i) => {
+      const rows = section.querySelectorAll<HTMLElement>("[data-reveal-row]");
+      const sectionBars = section.querySelectorAll<HTMLElement>("[data-reveal-bar]");
+      const targets = rows.length > 0 ? rows : [section];
 
-    tl.to(header, { opacity: 1, y: 0, duration: 0.5 })
-      .to(share, { opacity: 1, y: 0, duration: 0.4 }, "-=0.3")
-      .to(sidebarItems, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, "-=0.3")
-      .to(chart, { opacity: 1, y: 0, duration: 0.45 }, "-=0.25")
-      .to(scouting, { opacity: 1, y: 0, duration: 0.4 }, "-=0.2")
-      .to(
-        bars,
-        {
-          width: (i, el) => `${(el as HTMLElement).dataset.score}%`,
-          duration: 0.6,
-          stagger: 0.05,
+      gsap.set(section, { opacity: 0, y: 24 });
+      // Rows only animate a y-offset (not opacity): some rows carry their
+      // own intentional resting opacity (e.g. "on loan" season rows at 60%),
+      // and an inline opacity:1 from the reveal tween would clobber that.
+      if (rows.length > 0) gsap.set(rows, { y: 16 });
+      gsap.set(sectionBars, { width: 0 });
+
+      const trigger = ScrollTrigger.create({
+        trigger: section,
+        start: "top 80%",
+        once: true,
+        // The first couple of sections are visible on load — animate them
+        // right away instead of waiting for a scroll event to fire.
+        onEnter: () => {
+          const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+          tl.to(section, { opacity: 1, y: 0, duration: 0.5 });
+          if (rows.length > 0) {
+            tl.to(targets, { y: 0, duration: 0.4, stagger: 0.06 }, "-=0.3");
+          }
+          if (sectionBars.length > 0) {
+            tl.to(
+              sectionBars,
+              { width: (_i, el) => `${(el as HTMLElement).dataset.score}%`, duration: 0.6, stagger: 0.05 },
+              "-=0.2"
+            );
+          }
         },
-        "-=0.15"
-      )
-      .to(table, { opacity: 1, y: 0, duration: 0.4 }, "-=0.35");
+      });
+      triggers.push(trigger);
+      void i;
+    });
+
+    // Above-the-fold sections may already satisfy their trigger before
+    // layout settles (fonts/images loading) — refresh once on next tick.
+    const refreshId = requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
-      tl.kill();
+      cancelAnimationFrame(refreshId);
+      triggers.forEach((t) => t.kill());
     };
   }, []);
 

@@ -52,7 +52,9 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
             {seasons.map((s, i) => (
               <tr
                 key={s.year}
+                data-reveal-row
                 className={
+                  "transition-colors hover:bg-tm-blue-bright/10 " +
                   (i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40") +
                   (s.hasData ? "" : " opacity-60")
                 }

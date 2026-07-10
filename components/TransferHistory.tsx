@@ -20,7 +20,9 @@ export function TransferHistory({ transfers }: { transfers: Player["transfers"] 
             {transfers.map((t, i) => (
               <tr
                 key={`${t.season}-${i}`}
-                className={i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40"}
+                className={`transition-colors hover:bg-tm-blue-bright/10 ${
+                  i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40"
+                }`}
               >
                 <td className="px-4 py-2 font-medium">{t.season}</td>
                 <td className="px-4 py-2 text-muted">{t.from}</td>

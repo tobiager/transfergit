@@ -1,27 +1,31 @@
 import { ImageResponse } from "next/og";
 import { loadOgFonts } from "../_shared/fonts";
 import { loadOgPlayer } from "../_shared/data";
-import { buildChartGeometry } from "../_shared/sparkline";
+import { buildChartGeometry, buildYAxisTicks } from "../_shared/sparkline";
+import { computeFullCardHeight } from "../_shared/cardHeight";
 import { OG_COLORS as C } from "../_shared/theme";
 import { topUnlockedTrophies } from "../_shared/trophies";
 import { TrophySilhouette } from "../_shared/TrophySilhouette";
-import { formatNumber, computeMarketValueTrend } from "@/lib/format";
+import { OgFlag } from "../_shared/OgFlag";
+import { formatNumber, formatCompactValue, computeMarketValueTrend } from "@/lib/format";
 
 export const runtime = "edge";
 
-// 1200x1300: the dense, README-sized card copied by "Copy Markdown".
+// 1200 wide, dense README-sized card copied by "Copy Markdown". Height is
+// computed per-profile (see computeFullCardHeight) so the card ends where
+// its content ends instead of leaving dead space or clipping.
 const WIDTH = 1200;
-const HEIGHT = 1300;
+const FALLBACK_HEIGHT = 900;
 const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
 const CHART_WIDTH = 1088;
-const CHART_HEIGHT = 220;
+const CHART_HEIGHT = 260;
 
 function NotFoundImage() {
   return (
     <div
       style={{
         width: WIDTH,
-        height: HEIGHT,
+        height: FALLBACK_HEIGHT,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -41,14 +45,37 @@ function SectionTitle({ children }: { children: string }) {
     <div
       style={{
         display: "flex",
-        fontFamily: "Barlow Condensed",
-        fontSize: 20,
-        color: C.foreground,
-        textTransform: "uppercase",
-        letterSpacing: 3,
+        flexDirection: "column",
+        width: "100%",
+        paddingTop: 24,
+        borderTopWidth: 1,
+        borderTopStyle: "solid",
+        borderTopColor: C.border,
       }}
     >
-      {children}
+      <div
+        style={{
+          display: "flex",
+          fontFamily: "Barlow Condensed",
+          fontSize: 20,
+          color: C.foreground,
+          textTransform: "uppercase",
+          letterSpacing: 3,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SeasonTh({ label, source }: { label: string; source: string }) {
+  return (
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", alignItems: "flex-end" }}>
+      <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", fontFamily: "Barlow Condensed" }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", fontSize: 10, color: C.muted, opacity: 0.7 }}>{source}</div>
     </div>
   );
 }
@@ -61,7 +88,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
   if (!player) {
     return new ImageResponse(<NotFoundImage />, {
       width: WIDTH,
-      height: HEIGHT,
+      height: FALLBACK_HEIGHT,
       fonts,
       status: 404,
       headers: { "Cache-Control": "public, max-age=0, s-maxage=60" },
@@ -70,8 +97,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
 
   const trend = computeMarketValueTrend(player.marketValueHistory);
   const trophies = topUnlockedTrophies(player, 6);
-  const chart = buildChartGeometry(player.marketValueHistory, CHART_WIDTH, CHART_HEIGHT, 16);
+  const CHART_PADDING = 20;
+  const chart = buildChartGeometry(player.marketValueHistory, CHART_WIDTH, CHART_HEIGHT, CHART_PADDING);
+  const yTicks = buildYAxisTicks(player.marketValueHistory, CHART_HEIGHT, CHART_PADDING, 3);
+  const lastPoint = chart.points[chart.points.length - 1];
   const seasons = player.seasons.slice(0, 6);
+  const HEIGHT = computeFullCardHeight({
+    trophyCount: trophies.length,
+    ratingsCount: player.ratings.length,
+    seasonsShown: seasons.length,
+  });
   const totals = player.seasons.reduce(
     (acc, s) => ({
       activeDays: acc.activeDays + s.activeDays,
@@ -131,7 +166,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 >
                   {player.position.main}
                 </div>
-                <div style={{ display: "flex", fontSize: 24, marginLeft: 14 }}>{player.nationalityFlag}</div>
+                <div style={{ display: "flex", marginLeft: 14 }}>
+                  <OgFlag iso2={player.nationalityIso2} size={24} />
+                </div>
                 {player.currentClubAvatar && (
                   // eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image.
                   <img
@@ -168,13 +205,24 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 <div
                   style={{
                     display: "flex",
+                    alignItems: "center",
                     fontSize: 18,
                     fontWeight: 700,
                     marginLeft: 12,
                     color: trend.direction === "up" ? C.green : "#e5484d",
                   }}
                 >
-                  {trend.direction === "up" ? "▲" : "▼"} {Math.abs(trend.pct).toFixed(0)}%
+                  <svg width={14} height={14} viewBox="0 0 12 12" style={{ marginRight: 4 }}>
+                    <path
+                      d={
+                        trend.direction === "up"
+                          ? "M6 1.5 L11 9.5 L1 9.5 Z"
+                          : "M6 10.5 L1 2.5 L11 2.5 Z"
+                      }
+                      fill={trend.direction === "up" ? C.green : "#e5484d"}
+                    />
+                  </svg>
+                  {Math.abs(trend.pct).toFixed(0)}%
                 </div>
               )}
             </div>
@@ -182,7 +230,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
         </div>
 
         {/* Trophy row */}
-        {trophies.length > 0 && (
+        {trophies.length >= 3 && (
           <div
             style={{
               display: "flex",
@@ -200,7 +248,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 key={trophy.id}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}
               >
-                <TrophySilhouette tier={trophy.tier} size={38} />
+                <TrophySilhouette id={trophy.id} size={38} />
                 <div
                   style={{
                     display: "flex",
@@ -217,20 +265,112 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           </div>
         )}
 
-        {/* Market value evolution */}
+        {/* Market value evolution. Satori doesn't support SVG <text>, so
+            every label is a plain positioned <div> layered over the chart. */}
         <div style={{ display: "flex", flexDirection: "column", width: "100%", marginTop: 32 }}>
           <SectionTitle>Market Value Evolution</SectionTitle>
-          <svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 10 }}>
-            <path d={chart.area} fill="rgba(62,166,255,0.16)" />
-            <path d={chart.line} stroke={C.blueBright} strokeWidth={4} fill="none" />
-            {chart.points.map((p, i) =>
-              i === chart.recordIndex ? (
-                <circle key={i} cx={p.x} cy={p.y} r={7} fill={C.gold} />
-              ) : (
-                <circle key={i} cx={p.x} cy={p.y} r={3} fill={C.blueBright} />
-              )
+          <div style={{ display: "flex", position: "relative", width: CHART_WIDTH, height: CHART_HEIGHT + 40, marginTop: 10 }}>
+            <svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ position: "absolute", left: 0, top: 0 }}>
+              <defs>
+                <linearGradient id="og-chart-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={C.blueBright} stopOpacity={0.45} />
+                  <stop offset="100%" stopColor={C.blueBright} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {yTicks.map((tick, i) => (
+                <line
+                  key={i}
+                  x1={0}
+                  y1={tick.y}
+                  x2={CHART_WIDTH}
+                  y2={tick.y}
+                  stroke={C.border}
+                  strokeWidth={1}
+                  strokeDasharray="4 5"
+                />
+              ))}
+
+              <path d={chart.area} fill="url(#og-chart-gradient)" />
+              <path d={chart.line} stroke={C.blueBright} strokeWidth={3} fill="none" />
+
+              {chart.points.map((p, i) =>
+                i === chart.recordIndex || i === chart.points.length - 1 ? null : (
+                  <circle key={i} cx={p.x} cy={p.y} r={3} fill={C.blueBright} />
+                )
+              )}
+
+              {chart.recordIndex >= 0 && (
+                <circle
+                  cx={chart.points[chart.recordIndex].x}
+                  cy={chart.points[chart.recordIndex].y}
+                  r={7}
+                  fill={C.gold}
+                />
+              )}
+
+              {lastPoint && chart.recordIndex !== chart.points.length - 1 && (
+                <circle cx={lastPoint.x} cy={lastPoint.y} r={7} fill={C.blueBright} />
+              )}
+            </svg>
+
+            {/* Y-axis labels */}
+            {yTicks.map((tick, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  left: 4,
+                  top: Math.max(tick.y - 16, 0),
+                  fontSize: 13,
+                  color: C.muted,
+                }}
+              >
+                {formatCompactValue(tick.value)}
+              </div>
+            ))}
+
+            {/* Record label */}
+            {chart.recordIndex >= 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  left: Math.min(Math.max(chart.points[chart.recordIndex].x - 28, 0), CHART_WIDTH - 56),
+                  top: Math.max(chart.points[chart.recordIndex].y - 30, 0),
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.gold,
+                }}
+              >
+                Record
+              </div>
             )}
-          </svg>
+
+            {/* Current-value chip at the last point */}
+            {lastPoint && (
+              <div
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  left: Math.min(Math.max(lastPoint.x - 46, 0), CHART_WIDTH - 92),
+                  top: CHART_HEIGHT + 8,
+                  width: 92,
+                  height: 30,
+                  borderRadius: 6,
+                  backgroundColor: C.navy,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                }}
+              >
+                {player.marketValueFormatted}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Scouting metrics */}
@@ -277,13 +417,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
               borderColor: C.border,
             }}
           >
-            <div style={{ display: "flex", flexDirection: "row", backgroundColor: C.surfaceElevated, padding: "10px 16px" }}>
-              <div style={{ display: "flex", width: 100, fontSize: 13, color: C.muted, textTransform: "uppercase" }}>Season</div>
-              <div style={{ ...columnStyle, fontSize: 13, color: C.muted, textTransform: "uppercase" }}>Apps</div>
-              <div style={{ ...columnStyle, fontSize: 13, color: C.muted, textTransform: "uppercase" }}>Goals</div>
-              <div style={{ ...columnStyle, fontSize: 13, color: C.muted, textTransform: "uppercase" }}>Assists</div>
-              <div style={{ ...columnStyle, fontSize: 13, color: C.muted, textTransform: "uppercase" }}>YC</div>
-              <div style={{ ...columnStyle, fontSize: 13, color: C.muted, textTransform: "uppercase" }}>Minutes</div>
+            <div style={{ display: "flex", flexDirection: "row", backgroundColor: C.surfaceElevated, padding: "8px 16px" }}>
+              <div style={{ display: "flex", width: 100, fontSize: 13, color: C.muted, textTransform: "uppercase", fontFamily: "Barlow Condensed" }}>
+                Season
+              </div>
+              <SeasonTh label="Appearances" source="active days" />
+              <SeasonTh label="Goals" source="commits" />
+              <SeasonTh label="Assists" source="pull requests" />
+              <SeasonTh label="YC" source="issues" />
+              <SeasonTh label="Minutes" source="contributions" />
             </div>
             {seasons.map((s, i) => (
               <div

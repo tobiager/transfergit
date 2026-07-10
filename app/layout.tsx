@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { ValuationModal } from "@/components/ValuationModal";
 import { ValuationModalProvider } from "@/components/ValuationModalContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const display = Archivo_Black({
   variable: "--font-display",
@@ -38,13 +39,16 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${display.variable} ${table.variable} ${body.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-dvh flex flex-col bg-pitch text-foreground">
-        <ValuationModalProvider>
-          <Navbar />
-          {children}
-          <ValuationModal />
-        </ValuationModalProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ValuationModalProvider>
+            <Navbar />
+            {children}
+            <ValuationModal />
+          </ValuationModalProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

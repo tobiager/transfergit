@@ -8,7 +8,7 @@ export function ScoutingMetrics({ ratings }: { ratings: RatingMetric[] }) {
       </h2>
       <div className="space-y-3 p-4">
         {ratings.map((rating) => (
-          <div key={rating.key}>
+          <div key={rating.key} data-reveal-row>
             <div className="mb-1 flex items-baseline justify-between gap-2">
               <div>
                 <span className="font-semibold">{rating.label}</span>{" "}

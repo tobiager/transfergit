@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchGithubProfile } from "@/lib/github";
 import { buildPlayer } from "@/lib/player";
+import { rankAgainstReference } from "@/lib/ranking";
 import { PlayerHeader } from "@/components/PlayerHeader";
 import { MarketValueChart } from "@/components/MarketValueChart";
 import { SeasonStatsTable } from "@/components/SeasonStatsTable";
 import { PlayerDataCard } from "@/components/PlayerDataCard";
+import { PositionDetailCard } from "@/components/PositionDetailCard";
 import { TransferHistory } from "@/components/TransferHistory";
 import { InjuryHistory } from "@/components/InjuryHistory";
 import { ScoutingMetrics } from "@/components/ScoutingMetrics";
 import { TrophyCabinet } from "@/components/TrophyCabinet";
 import { ExportPanel } from "@/components/ExportPanel";
 import { ProfileReveal } from "@/components/ProfileReveal";
+import { ProfileTabs } from "@/components/ProfileTabs";
+import { RankingCircles } from "@/components/RankingCircles";
 import { SITE_URL } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -52,17 +56,29 @@ export default async function PlayerPage({ params }: PageProps) {
 
   const player = buildPlayer(profile);
 
+  const overallRanking = rankAgainstReference(player.login, player.marketValue);
+  const positionRanking = rankAgainstReference(player.login, player.marketValue, player.position.main);
+  const rankingItems = [
+    { label: "Rank among scouted legends", value: overallRanking.rank, prefix: "#" },
+    { label: "Top % by market value", value: Math.max(overallRanking.percentile, 1), suffix: "%" },
+    { label: `Rank among ${player.position.main}s`, value: positionRanking.rank, prefix: "#" },
+  ];
+
   return (
     <ProfileReveal>
+      <ProfileTabs />
       <main className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-4 px-4 py-6 md:grid-cols-3 md:px-6">
         <div className="space-y-4 md:col-span-2">
-          <PlayerHeader player={player} />
-
-          <TrophyCabinet player={player} />
+          <div id="profile" className="scroll-mt-28 space-y-4">
+            <PlayerHeader player={player} />
+            <div className="tm-card rounded-xl p-4">
+              <RankingCircles items={rankingItems} />
+            </div>
+          </div>
 
           <ExportPanel login={player.login} marketValueFormatted={player.marketValueFormatted} />
 
-          <div data-reveal="chart" className="rounded-xl tm-card p-4">
+          <div id="market-value" data-reveal="chart" className="scroll-mt-28 rounded-xl tm-card p-4">
             <div className="mb-2 flex items-baseline justify-between px-1">
               <h2 className="font-table text-lg font-bold uppercase tracking-wide">
                 Market Value Evolution
@@ -72,16 +88,26 @@ export default async function PlayerPage({ params }: PageProps) {
                 ({player.recordValue.year})
               </p>
             </div>
-            <MarketValueChart history={player.marketValueHistory} recordYear={player.recordValue.year} />
+            <MarketValueChart
+              history={player.marketValueHistory}
+              recordYear={player.recordValue.year}
+              currentClubAvatar={player.currentClubAvatar}
+            />
           </div>
 
-          <ScoutingMetrics ratings={player.ratings} />
+          <div id="trophies" className="scroll-mt-28">
+            <TrophyCabinet player={player} />
+          </div>
 
-          <SeasonStatsTable seasons={player.seasons} />
+          <div id="stats" className="scroll-mt-28 space-y-4">
+            <ScoutingMetrics ratings={player.ratings} />
+            <SeasonStatsTable seasons={player.seasons} />
+          </div>
         </div>
 
         <div className="space-y-4">
           <PlayerDataCard player={player} />
+          <PositionDetailCard position={player.position} />
           <TransferHistory transfers={player.transfers} />
           <InjuryHistory injuries={player.injuries} />
         </div>

@@ -308,12 +308,6 @@ const US_STATE_ABBREVIATIONS = new Set([
   "DC",
 ]);
 
-function isoToFlagEmoji(iso2: string): string {
-  return iso2
-    .toUpperCase()
-    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
-}
-
 // A flag emoji is two "regional indicator symbols" (U+1F1E6-U+1F1FF). If the
 // location already comes as an emoji (common on GitHub), read it directly
 // instead of trying to match text.
@@ -362,28 +356,24 @@ function isoFromFreeText(text: string): string | null {
 }
 
 export interface Nationality {
-  flag: string;
   countryName: string | null;
+  iso2: string | null;
 }
 
 export function resolveNationality(location: string | null): Nationality {
-  if (!location) return { flag: "🌍", countryName: "Unknown" };
+  if (!location) return { countryName: "Unknown", iso2: null };
 
   const isoFromFlag = flagEmojiToIso(location);
   if (isoFromFlag && ISO2_TO_NAME[isoFromFlag]) {
-    return { flag: isoToFlagEmoji(isoFromFlag), countryName: ISO2_TO_NAME[isoFromFlag] };
+    return { countryName: ISO2_TO_NAME[isoFromFlag], iso2: isoFromFlag.toLowerCase() };
   }
 
   const iso = isoFromFreeText(location);
   if (iso) {
-    return { flag: isoToFlagEmoji(iso), countryName: ISO2_TO_NAME[iso] ?? "Unknown" };
+    return { countryName: ISO2_TO_NAME[iso] ?? "Unknown", iso2: iso.toLowerCase() };
   }
 
-  return { flag: "🌍", countryName: "Unknown" };
-}
-
-export function locationToFlag(location: string | null): string {
-  return resolveNationality(location).flag;
+  return { countryName: "Unknown", iso2: null };
 }
 
 // Text shown as "place of birth": if the profile's location is directly a

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { Player } from "@/lib/types";
+import { Flag } from "./Flag";
 
 export function PlayerDataCard({ player }: { player: Player }) {
   const rows: Array<[string, React.ReactNode]> = [
@@ -21,7 +22,13 @@ export function PlayerDataCard({ player }: { player: Player }) {
     ["Joined", player.joinedDate],
     ["Date of birth / Age", `${player.birthDate} (${player.age})`],
     ["Place of birth", player.birthPlace],
-    ["Nationality", `${player.nationalityFlag} ${player.nationalityName}`],
+    [
+      "Nationality",
+      <span key="nationality" className="flex items-center justify-end gap-2">
+        <Flag code={player.nationalityIso2} size={18} />
+        {player.nationalityName}
+      </span>,
+    ],
     ["Agent", player.agent],
     ["Preferred stack", player.provider],
     ["Preferred foot", player.position.foot],

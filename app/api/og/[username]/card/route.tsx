@@ -5,6 +5,7 @@ import { buildSparklinePaths } from "../../_shared/sparkline";
 import { OG_COLORS as C } from "../../_shared/theme";
 import { topUnlockedTrophies } from "../../_shared/trophies";
 import { TrophySilhouette } from "../../_shared/TrophySilhouette";
+import { OgFlag } from "../../_shared/OgFlag";
 
 export const runtime = "edge";
 
@@ -88,7 +89,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           >
             Transfergit
           </div>
-          <div style={{ display: "flex", fontSize: 30 }}>{player.nationalityFlag}</div>
+          <OgFlag iso2={player.nationalityIso2} size={30} />
         </div>
 
         {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
@@ -216,7 +217,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 key={trophy.id}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", marginLeft: 18, marginRight: 18 }}
               >
-                <TrophySilhouette tier={trophy.tier} size={30} />
+                <TrophySilhouette id={trophy.id} size={30} />
               </div>
             ))}
           </div>

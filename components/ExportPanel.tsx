@@ -19,6 +19,7 @@ export function ExportPanel({
 }) {
   const [variant, setVariant] = useState<Variant>("full");
   const [toast, setToast] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loaded, setLoaded] = useState<Record<Variant, boolean>>({ full: false, compact: false });
 
   function origin(): string {
@@ -43,6 +44,8 @@ export function ExportPanel({
     try {
       await navigator.clipboard.writeText(markdown);
       showToast("Copied! Paste it in your README");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     } catch {
       showToast("Couldn't copy — select and copy manually");
     }
@@ -126,9 +129,29 @@ export function ExportPanel({
         <button
           type="button"
           onClick={copyMarkdown}
-          className="col-span-2 rounded-md bg-value-green px-4 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-pitch transition hover:brightness-110"
+          className="relative col-span-2 overflow-hidden rounded-md bg-value-green px-4 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-pitch transition hover:brightness-110"
         >
-          Copy Markdown
+          <span
+            className="flex items-center justify-center gap-1.5 transition-all duration-200"
+            style={{
+              opacity: copied ? 0 : 1,
+              transform: copied ? "translateY(-8px)" : "translateY(0)",
+            }}
+          >
+            Copy Markdown
+          </span>
+          <span
+            className="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-200"
+            style={{
+              opacity: copied ? 1 : 0,
+              transform: copied ? "translateY(0)" : "translateY(8px)",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Copied!
+          </span>
         </button>
         <button
           type="button"
