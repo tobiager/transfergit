@@ -1,100 +1,100 @@
 # Transfergit ⚽
 
-**Tu GitHub, tasado como jugador de fútbol.**
+**Your GitHub, valued like a football player.**
 
-Convertí cualquier perfil de GitHub en una ficha de jugador estilo Transfermarkt — con estética de transmisión deportiva nocturna: la seriedad editorial de Transfermarkt con producción de Champions League. Valor de mercado calculado en base a tu actividad real (commits, stars, pull requests, followers), historial de fichajes, lesiones (rachas sin commitear), estadísticas por temporada y scouting metrics.
+Turn any GitHub profile into a Transfermarkt-style player card — with a night-broadcast sports aesthetic: Transfermarkt's editorial seriousness with Champions League production value. Market value calculated from your real activity (commits, stars, pull requests, followers), transfer history, injuries (commit-free streaks), season-by-season stats, and scouting metrics.
 
-Probalo con [`/torvalds`](https://transfergit.com/torvalds), [`/gaearon`](https://transfergit.com/gaearon) o tu propio usuario.
+Try it with [`/torvalds`](https://transfergit.com/torvalds), [`/gaearon`](https://transfergit.com/gaearon), or your own username.
 
-## Cómo funciona
+## How it works
 
-1. Ingresás un usuario de GitHub.
-2. `lib/github.ts` trae tu perfil público completo vía la API GraphQL de GitHub (contribuciones por año, repos, orgs, calendario de actividad).
-3. `lib/player.ts` y el resto de `lib/` traducen esos datos a términos futboleros:
-   - **Valor de mercado** (`lib/valuation.ts`): fórmula basada en commits, stars, followers, pull requests y repos con tracción, con multiplicadores por antigüedad de cuenta y forma reciente.
-   - **Posición** (`lib/positions.ts`): según el lenguaje/categoría dominante en tus repos (frontend → Extremo derecho, backend → Mediocentro, devops → Arquero, etc.).
-   - **Lesiones** (`lib/injuries.ts`): rachas sin actividad en el último año.
-   - **Fichajes**: cambios de lenguaje dominante temporada a temporada + altas a organizaciones.
-   - **Scouting metrics**: commits, stars, PRs, code reviews y racha de actividad, normalizados a una escala 0-99.
-4. Todo se muestra en una ficha estilo Transfermarkt, exportable como imagen para README o redes.
+1. Enter a GitHub username.
+2. `lib/github.ts` fetches your full public profile via the GitHub GraphQL API (contributions per year, repos, orgs, activity calendar).
+3. `lib/player.ts` and the rest of `lib/` translate that data into football terms:
+   - **Market value** (`lib/valuation.ts`): a formula based on commits, stars, followers, pull requests, and repos with traction, with multipliers for account age and recent form.
+   - **Position** (`lib/positions.ts`): based on the dominant language/category across your repos (frontend → Right Winger, backend → Midfielder, devops → Goalkeeper, etc.).
+   - **Injuries** (`lib/injuries.ts`): activity-free streaks over the last year.
+   - **Transfers**: dominant-language changes season to season + organization joins.
+   - **Scouting metrics**: commits, stars, PRs, code reviews, and activity streak, normalized to a 0-99 scale.
+4. Everything renders on a Transfermarkt-style card, exportable as an image for READMEs or social media.
 
-No hay inputs manuales ni ediciones: todo se lee en vivo de tu perfil público.
+No manual inputs or edits: everything is read live from your public profile.
 
-## Funcionalidades destacadas
+## Highlighted features
 
-- **Trophy Cabinet** (`lib/achievements.ts`, `components/TrophyCabinetGrid.tsx`): 14 logros tipados por reglas (Repositorios, Impacto, Carrera, Historial Médico, Cultura Dev), con tiers squad/international/ballon-dor. Los bloqueados muestran progreso en escala de grises; los de tier ballon-dor tienen glow dorado pulsante.
-- **Ranking** (`lib/ranking.ts`, `components/RankingCircles.tsx`): compara tu valor de mercado contra un dataset de referencia de perfiles reales de GitHub (regenerable con `scripts/generate-reference-dataset.ts`).
-- **Position in Detail** (`components/PositionPitch.tsx`, `PositionDetailCard.tsx`): mini-cancha que ubica tu posición futbolera según el lenguaje/categoría dominante.
-- **Tema claro/oscuro** vía `next-themes` (`components/ThemeProvider.tsx`).
+- **Trophy Cabinet** (`lib/achievements.ts`, `components/TrophyCabinetGrid.tsx`): 14 rule-based achievements (Repositories, Impact, Career, Medical Record, Dev Culture), across squad/international/ballon-dor tiers. Locked ones show grayscale with a progress bar; ballon-dor tier trophies get a pulsing gold glow.
+- **Ranking** (`lib/ranking.ts`, `components/RankingCircles.tsx`): benchmarks your market value against a reference dataset of real GitHub profiles (regenerable with `scripts/generate-reference-dataset.ts`).
+- **Position in Detail** (`components/PositionPitch.tsx`, `PositionDetailCard.tsx`): a mini-pitch diagram placing your football position based on the dominant language/category.
+- **Light/dark theme toggle** via `next-themes` (`components/ThemeProvider.tsx`).
 
 ## Stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- **Tailwind CSS v4** (tokens de diseño vía `@theme inline` en `app/globals.css`, sin `tailwind.config`)
-- **GSAP** para las animaciones de entrada (reveal del perfil y de la landing)
-- **Recharts** para el gráfico de evolución de valor de mercado
-- **next-themes** para el toggle de tema claro/oscuro
-- **next/og** (`ImageResponse`, Satori) para los endpoints de exportación de imagen — corren en Edge Runtime
-- Fuentes: **Archivo Black** / **Archivo** / **Barlow Condensed**, cargadas con `next/font/google` en la web y como buffers `.ttf` propios (`assets/fonts/`) para Satori
+- **Tailwind CSS v4** (design tokens via `@theme inline` in `app/globals.css`, no `tailwind.config`)
+- **GSAP** for entrance animations (profile and landing reveal)
+- **Recharts** for the market value evolution chart
+- **next-themes** for the light/dark theme toggle
+- **next/og** (`ImageResponse`, Satori) for the image export endpoints — run on Edge Runtime
+- Fonts: **Archivo Black** / **Archivo** / **Barlow Condensed**, loaded with `next/font/google` on the web and as raw `.ttf` buffers (`assets/fonts/`) for Satori
 
-## Sistema de diseño
+## Design system
 
-Fondo con profundidad (nunca plano): gradiente radial + textura de ruido SVG (`feTurbulence`) + patrón de campo de juego sutil en los bordes de la landing.
+Background with depth (never flat): radial gradient + SVG noise texture (`feTurbulence`) + a subtle pitch pattern on the landing's edges.
 
-| Token | Uso |
+| Token | Use |
 |---|---|
-| `--pitch` `#0a0e1a` → `--pitch-elevated` `#141b2e` | Fondo base |
-| `--tm-blue-deep` `#1a3151` (navy Transfermarkt) | Headers de secciones y tablas |
-| `--value-green` `#00c853` | **Exclusivo** para el valor de mercado, flechas de tendencia y CTAs primarios |
-| `--gold` `#ffc400` | Marcador de récord y highlights especiales |
+| `--pitch` `#0a0e1a` → `--pitch-elevated` `#141b2e` | Base background |
+| `--tm-blue-deep` `#1a3151` (Transfermarkt navy) | Section and table headers |
+| `--value-green` `#00c853` | **Exclusive** to market value, trend arrows, and primary CTAs |
+| `--gold` `#ffc400` | Record markers and special highlights |
 
-Cards con borde blanco al 6%, sombra doble (ambiente + contacto) — clase utilitaria `.tm-card` en `globals.css`. Tilt 3D sutil en hover sobre la ficha principal (`components/TiltCard.tsx`).
+Cards with a 6% white border, double shadow (ambient + contact) — `.tm-card` utility class in `globals.css`. Subtle 3D tilt on hover for the main card (`components/TiltCard.tsx`).
 
-## Animaciones (GSAP)
+## Animations (GSAP)
 
-- **`components/ProfileReveal.tsx`**: orquesta la entrada del perfil — ficha principal → sidebar en stagger → gráfico → barras de scouting creciendo desde 0 → tabla de temporadas. Además migra el count-up del valor de mercado de `requestAnimationFrame` a GSAP.
-- **`components/LandingReveal.tsx`**: titular con reveal por `clip-path` línea por línea, subtítulo/input con fade+rise, abanico de cards entrando con stagger y rotación, contador de fichas generadas.
-- Todo respeta `prefers-reduced-motion`: si está activado, el estado final se aplica de forma instantánea, sin animar.
+- **`components/ProfileReveal.tsx`**: orchestrates the profile's entrance — main card → sidebar in stagger → chart → scouting bars growing from 0 → season table. Also migrates the market value count-up from `requestAnimationFrame` to GSAP.
+- **`components/LandingReveal.tsx`**: headline reveal via `clip-path` line by line, subtitle/input with fade+rise, card fan entering with stagger and rotation, generated-cards counter.
+- Everything respects `prefers-reduced-motion`: if enabled, the final state is applied instantly, with no animation.
 
-## Exportar tu ficha
+## Export your card
 
-Desde `/[username]` hay un panel de export (`components/ExportPanel.tsx`) con:
+From `/[username]` there's an export panel (`components/ExportPanel.tsx`) with:
 
-- **Preview en vivo** de dos variantes — *Full card* (1200×630, para OG/README) y *Compact* (900×1200, ficha coleccionable vertical).
-- **Copy Markdown**: copia una imagen embebida que linkea a tu ficha — pegala en tu README de GitHub.
-- **Download PNG** de la variante seleccionada.
+- **Live preview** of two variants — *Full card* (1200×630, for OG/README) and *Compact* (900×1200, vertical collectible card).
+- **Copy Markdown**: copies an embedded image linking to your card — paste it into your GitHub README.
+- **Download PNG** of the selected variant.
 - **Share on X / LinkedIn**.
 
-Los endpoints (`app/api/og/[username]/route.tsx` y `.../card/route.tsx`) generan las imágenes en Edge Runtime con `next/og`, comparten los mismos tokens de color/tipografía que la web, y cachean con `s-maxage=86400, stale-while-revalidate`.
+The endpoints (`app/api/og/[username]/route.tsx` and `.../card/route.tsx`) generate the images on Edge Runtime with `next/og`, share the same color/typography tokens as the web, and cache with `s-maxage=86400, stale-while-revalidate`.
 
-## Empezar
+## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # completá GITHUB_TOKEN con un Personal Access Token (sin permisos especiales, solo lectura pública)
+cp .env.example .env.local   # fill in GITHUB_TOKEN with a Personal Access Token (no special scopes, public read-only)
 npm run dev
 ```
 
-Abrí [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
-### Variables de entorno
+### Environment variables
 
-| Variable | Requerida | Descripción |
+| Variable | Required | Description |
 |---|---|---|
-| `GITHUB_TOKEN` | Sí | Personal Access Token de GitHub, solo para leer perfiles públicos vía GraphQL |
-| `NEXT_PUBLIC_SITE_URL` | No | URL pública del sitio, usada en OG tags y en los links del panel de export. Sin configurar, cae a `VERCEL_URL` o `http://localhost:3000` |
+| `GITHUB_TOKEN` | Yes | GitHub Personal Access Token, only used to read public profiles via GraphQL |
+| `NEXT_PUBLIC_SITE_URL` | No | Public site URL, used in OG tags and export panel links. Falls back to `VERCEL_URL` or `http://localhost:3000` if unset |
 
-## Estructura del proyecto
+## Project structure
 
 ```
 app/
   page.tsx                 # Landing
-  [username]/page.tsx      # Ficha de jugador
-  api/og/[username]/       # Endpoints de exportación de imagen (next/og)
-components/                # UI de la ficha, landing y panel de export
-lib/                       # Data fetching (GitHub GraphQL) y lógica de traducción a términos futboleros
-assets/fonts/              # .ttf usados por Satori (no pueden cargarse por CSS)
-public/fan-cards/          # Fichas de devs conocidos, pre-renderizadas para el abanico de la landing
+  [username]/page.tsx      # Player card
+  api/og/[username]/       # Image export endpoints (next/og)
+components/                # Card, landing, and export panel UI
+lib/                       # Data fetching (GitHub GraphQL) and football-terms translation logic
+assets/fonts/              # .ttf files used by Satori (can't be loaded via CSS)
+public/fan-cards/          # Pre-rendered cards of well-known devs for the landing fan
 ```
 
 ## Build
@@ -106,4 +106,4 @@ npm run start
 
 ---
 
-Hecho por [@tobiager](https://github.com/tobiager).
+Made by [@tobiager](https://github.com/tobiager).
