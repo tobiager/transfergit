@@ -50,6 +50,13 @@ export function formatNumber(value: number): string {
   return NUMBER_FORMAT.format(value);
 }
 
+// Compact form for tight spaces (stat circles): "850", "12K", "3.4M".
+export function formatCompactNumber(value: number): string {
+  if (value < 1000) return String(value);
+  if (value < 1_000_000) return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}K`;
+  return `${(value / 1_000_000).toFixed(1)}M`;
+}
+
 export function formatDate(isoDate: string): string {
   return DATE_FORMAT.format(new Date(isoDate));
 }
@@ -74,6 +81,16 @@ export function computeMarketValueTrend(
   if (prev <= 0) return null;
   const pct = ((current - prev) / prev) * 100;
   return { direction: pct > 0.5 ? "up" : pct < -0.5 ? "down" : "flat", pct };
+}
+
+// Deterministic 5-digit "FILE N°" shown next to the handle — stable per
+// login (same profile always gets the same number), not a real record id.
+export function seededFileNumber(login: string): string {
+  let hash = 0;
+  for (let i = 0; i < login.length; i++) {
+    hash = (hash * 31 + login.charCodeAt(i)) >>> 0;
+  }
+  return String(hash % 100_000).padStart(5, "0");
 }
 
 export function calculateAgeYears(fromIso: string, toDate: Date = new Date()): number {

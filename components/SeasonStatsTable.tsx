@@ -2,12 +2,10 @@ import type { Player } from "@/lib/types";
 import { formatNumber } from "@/lib/format";
 import { SectionHeader } from "./SectionHeader";
 
-function Th({ term, source, align = "right" }: { term: string; source: string; align?: "left" | "right" }) {
+function Th({ term, source }: { term: string; source: string }) {
   return (
-    <th className={`px-4 py-2 ${align === "right" ? "text-right" : "text-left"} font-semibold`}>
-      <span className="font-table block text-xs uppercase tracking-wide text-foreground">
-        {term}
-      </span>
+    <th className="px-4 py-2 text-right font-semibold">
+      <span className="font-mono block text-xs uppercase tracking-wide text-foreground">{term}</span>
       <span className="block text-[10px] font-normal normal-case text-muted">{source}</span>
     </th>
   );
@@ -37,13 +35,13 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-surface-elevated">
-              <th className="font-table px-4 py-2 text-left align-bottom text-xs font-semibold uppercase tracking-wide text-muted">
+              <th className="font-mono px-4 py-2 text-left align-bottom text-xs font-semibold uppercase tracking-wide text-muted">
                 Season
               </th>
-              <Th term="Appearances" source="active days" />
+              <Th term="Apps" source="active days" />
               <Th term="Goals" source="commits" />
               <Th term="Assists" source="pull requests" />
-              <Th term="Yellow cards" source="issues" />
+              <Th term="YC" source="issues" />
               <Th term="Minutes" source="contributions" />
             </tr>
           </thead>
@@ -52,17 +50,13 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
               <tr
                 key={s.year}
                 data-reveal-row
-                className={
-                  "h-11 transition-colors hover:bg-tm-blue-bright/10 " +
-                  (i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40") +
-                  (s.hasData ? "" : " opacity-60")
-                }
+                className={`h-11 transition-colors hover:bg-surface-elevated/60 ${
+                  i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40"
+                } ${s.hasData ? "" : "opacity-60"}`}
               >
                 <td className="px-4 py-2 font-medium">
                   {s.year}
-                  {!s.hasData && (
-                    <span className="ml-2 text-[10px] uppercase text-muted">on loan</span>
-                  )}
+                  {!s.hasData && <span className="ml-2 text-[10px] uppercase text-muted">on loan</span>}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
                   <Cell value={s.activeDays} hasData={s.hasData} />
@@ -74,14 +68,7 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
                   <Cell value={s.pullRequests} hasData={s.hasData} />
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  {s.hasData ? (
-                    <>
-                      <span className="mr-1.5 inline-block h-4 w-3 rounded-sm bg-yellow-400 align-middle" />
-                      {formatNumber(s.issues)}
-                    </>
-                  ) : (
-                    <span className="text-muted">—</span>
-                  )}
+                  <Cell value={s.issues} hasData={s.hasData} />
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
                   <Cell value={s.totalContributions} hasData={s.hasData} />
@@ -90,7 +77,7 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-border bg-tm-blue-deep/30 font-bold">
+            <tr className="border-t border-border bg-surface-elevated font-bold">
               <td className="px-4 py-2">Total</td>
               <td className="px-4 py-2 text-right tabular-nums">{formatNumber(totals.activeDays)}</td>
               <td className="px-4 py-2 text-right tabular-nums text-value-green">

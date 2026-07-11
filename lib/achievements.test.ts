@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ACHIEVEMENTS, evaluateAchievements } from "./achievements.ts";
-import type { AchievementStats, Player } from "./types.ts";
+import { ACHIEVEMENTS, evaluateAchievements, topTrophies, countHonours } from "./achievements.ts";
+import type { AchievementStats, Player, SeasonStat, Injury, WorldCupRepo } from "./types.ts";
 
 const BASE_STATS: AchievementStats = {
   maxRepoStars: 0,
@@ -21,7 +21,10 @@ const BASE_STATS: AchievementStats = {
   hasFridayEveningCommit: false,
 };
 
-function makePlayer(stats: Partial<AchievementStats>): Player {
+function makePlayer(
+  stats: Partial<AchievementStats>,
+  extra: { seasons?: SeasonStat[]; injuries?: Injury[]; worldCupRepos?: WorldCupRepo[] } = {}
+): Player {
   return {
     login: "octocat",
     name: "Octocat",
@@ -48,9 +51,10 @@ function makePlayer(stats: Partial<AchievementStats>): Player {
     marketValueFormatted: "€0",
     marketValueHistory: [],
     recordValue: { value: 0, formatted: "€0", year: 2020 },
-    seasons: [],
+    seasons: extra.seasons ?? [],
     transfers: [],
-    injuries: [],
+    injuries: extra.injuries ?? [],
+    worldCupRepos: extra.worldCupRepos ?? [],
   };
 }
 
@@ -158,4 +162,98 @@ test("evaluateAchievements: reports progress and unlocked state consistently", (
   assert.deepStrictEqual(playmaker?.progress, { current: 12, target: 30 });
   assert.strictEqual(playmaker?.unlocked, false);
   assert.strictEqual(systemArchitect?.unlocked, true);
+});
+
+test("golden-boot-season occurrences: one per calendar year with 2000+ commits", () => {
+  const player = makePlayer(
+    { maxCommitsInYear: 2400, maxCommitsYear: 2022 },
+    {
+      seasons: [
+        { year: 2020, activeDays: 100, commits: 1000, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 1000, hasData: true },
+        { year: 2021, activeDays: 200, commits: 2100, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 2100, hasData: true },
+        { year: 2022, activeDays: 300, commits: 2400, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 2400, hasData: true },
+      ],
+    }
+  );
+  const result = evaluateAchievements(player).find((r) => r.achievement.id === "golden-boot-season");
+  assert.strictEqual(result?.unlocked, true);
+  assert.deepStrictEqual(result?.occurrences, [{ year: 2021 }, { year: 2022 }]);
+});
+
+test("acute-burnout occurrences: one per 30+ day gap, ignores shorter gaps", () => {
+  const player = makePlayer(
+    { maxInactivityGapDays: 45 },
+    {
+      injuries: [
+        { name: "Acute burnout", from: "01/03/2021", to: "20/03/2021", daysOut: 19, matchesMissed: 3 },
+        { name: "Torn deploy ligament", from: "01/06/2022", to: "20/07/2022", daysOut: 45, matchesMissed: 6 },
+      ],
+    }
+  );
+  const result = evaluateAchievements(player).find((r) => r.achievement.id === "acute-burnout");
+  assert.strictEqual(result?.unlocked, true);
+  assert.deepStrictEqual(result?.occurrences, [{ year: 2022 }]);
+});
+
+test("loan-spell occurrences: full inactive years followed by later activity", () => {
+  const player = makePlayer(
+    { hadLoanSpell: true },
+    {
+      seasons: [
+        { year: 2019, activeDays: 50, commits: 100, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 100, hasData: true },
+        { year: 2020, activeDays: 0, commits: 0, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 0, hasData: false },
+        { year: 2021, activeDays: 80, commits: 200, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 200, hasData: true },
+      ],
+    }
+  );
+  const result = evaluateAchievements(player).find((r) => r.achievement.id === "loan-spell");
+  assert.strictEqual(result?.unlocked, true);
+  assert.deepStrictEqual(result?.occurrences, [{ year: 2020 }]);
+});
+
+test("world-cup-player occurrences: one per distinct 10k+ star repo, with repo name as detail", () => {
+  const player = makePlayer(
+    { maxExternalPRRepoStars: 40_000 },
+    {
+      worldCupRepos: [
+        { name: "facebook/react", stars: 200_000, year: 2019 },
+        { name: "vercel/next.js", stars: 40_000, year: 2021 },
+      ],
+    }
+  );
+  const result = evaluateAchievements(player).find((r) => r.achievement.id === "world-cup-player");
+  assert.strictEqual(result?.unlocked, true);
+  assert.deepStrictEqual(result?.occurrences, [
+    { year: 2019, detail: "facebook/react" },
+    { year: 2021, detail: "vercel/next.js" },
+  ]);
+});
+
+test("countHonours: sums occurrences for repeatable trophies, 1 each for binary ones", () => {
+  const player = makePlayer(
+    { totalForks: 30, maxCommitsInYear: 2000, maxCommitsYear: 2022 },
+    {
+      seasons: [
+        { year: 2021, activeDays: 200, commits: 2100, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 2100, hasData: true },
+        { year: 2022, activeDays: 300, commits: 2000, pullRequests: 0, reviews: 0, issues: 0, totalContributions: 2000, hasData: true },
+      ],
+    }
+  );
+  const results = evaluateAchievements(player);
+  // playmaker (binary, 1) + golden-boot-season (2 occurrences) = 3
+  assert.strictEqual(countHonours(results), 3);
+});
+
+test("topTrophies: ballon-dor before international before squad", () => {
+  const player = makePlayer({
+    maxRepoStars: 50, // international: golden-boot-repo
+    totalForks: 30, // squad: playmaker
+    maxCommitsInYear: 2000, // ballon-dor: golden-boot-season
+    maxCommitsYear: 2024,
+  });
+  const results = evaluateAchievements(player);
+  const top = topTrophies(results, 2);
+  assert.strictEqual(top[0].achievement.id, "golden-boot-season");
+  assert.strictEqual(top[0].achievement.tier, "ballon-dor");
+  assert.strictEqual(top[1].achievement.tier, "international");
 });

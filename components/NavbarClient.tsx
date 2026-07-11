@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { formatNumber } from "@/lib/format";
 import { useValuationModal } from "./ValuationModalContext";
+import { Logo } from "./Logo";
+import { SearchInput } from "./SearchInput";
+import { StarButton } from "./StarButton";
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -16,7 +19,7 @@ function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <span className="h-8 w-8 shrink-0" aria-hidden />;
+    return <span className="h-9 w-9 shrink-0" aria-hidden />;
   }
 
   const isDark = resolvedTheme === "dark";
@@ -26,7 +29,7 @@ function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated text-muted transition hover:text-foreground"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated text-muted transition hover:text-foreground"
     >
       {isDark ? (
         <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -44,6 +47,8 @@ function ThemeToggle() {
 export function NavbarClient({ stars }: { stars: number | null }) {
   const [scrolled, setScrolled] = useState(false);
   const { openModal } = useValuationModal();
+  const pathname = usePathname();
+  const isProfile = pathname !== "/" && pathname !== "/hall-of-fame" && !pathname.startsWith("/api");
 
   useEffect(() => {
     function onScroll() {
@@ -60,33 +65,48 @@ export function NavbarClient({ stars }: { stars: number | null }) {
         scrolled ? "border-b border-border bg-pitch/80" : "border-b border-transparent bg-pitch/40"
       }`}
     >
-      <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6">
-        <Link
-          href="/"
-          className="flex items-center font-display text-sm uppercase tracking-wide text-tm-blue-bright transition hover:text-foreground"
-        >
-          Transfergit
+      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
+        <Link href="/" className="shrink-0 text-foreground transition hover:text-value-green">
+          <Logo />
         </Link>
 
-        <div className="flex items-center gap-4 text-sm">
-          <button
-            type="button"
-            onClick={openModal}
-            className="font-medium text-muted transition hover:text-foreground"
-          >
-            How it works ↗
-          </button>
-          <Link
-            href="https://github.com/tobiager/transfergit"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-md border border-border bg-surface-elevated px-3 py-1.5 font-medium transition hover:bg-border/40"
-          >
-            <span>Star on GitHub ⭐</span>
-            {stars !== null && <span className="tabular-nums">{formatNumber(stars)}</span>}
-          </Link>
-          <ThemeToggle />
-        </div>
+        {isProfile ? (
+          <>
+            <div className="hidden flex-1 justify-center sm:flex">
+              <SearchInput compact placeholder="Scout another player..." />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden md:block">
+                <StarButton stars={stars} />
+              </div>
+              <Link
+                href="#export"
+                className="glow-green flex h-9 shrink-0 items-center rounded-md bg-value-green px-4 font-display text-sm text-pitch transition hover:brightness-110"
+              >
+                ↓ Export card
+              </Link>
+              <ThemeToggle />
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-4 text-sm">
+            <button
+              type="button"
+              onClick={openModal}
+              className="hidden font-medium text-muted transition hover:text-foreground sm:inline"
+            >
+              How it works
+            </button>
+            <Link
+              href="/hall-of-fame"
+              className="hidden font-medium text-muted transition hover:text-foreground sm:inline"
+            >
+              Hall of Fame
+            </Link>
+            <StarButton stars={stars} />
+            <ThemeToggle />
+          </div>
+        )}
       </nav>
     </header>
   );

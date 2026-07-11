@@ -11,12 +11,11 @@ import { abbreviatePosition } from "@/lib/positions";
 
 export const runtime = "edge";
 
-// 1200x1600 (3:4): the minimal "player card" cloned from
-// design/floodlight-reference.html's export section — same content as the
-// live export preview, so preview and download match 1:1. No trophies, no
-// sparkline — deliberately dense-but-empty like the reference.
-const WIDTH = 1200;
-const HEIGHT = 1600;
+// 1080x1920 (9:16): the same minimal card anatomy as the 3:4, just more
+// vertical air and the value made the hero — the "story" format for
+// phone-screen shares.
+const WIDTH = 1080;
+const HEIGHT = 1920;
 const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
 
 function NotFoundImage() {
@@ -75,14 +74,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           flexDirection: "column",
           alignItems: "center",
           backgroundColor: C.pitch,
-          backgroundImage: "radial-gradient(circle at 50% -10%, rgba(0,230,118,0.12), transparent 55%)",
-          padding: 80,
-          position: "relative",
+          backgroundImage: "radial-gradient(circle at 50% -10%, rgba(0,230,118,0.14), transparent 55%)",
+          padding: 96,
           fontFamily: "Archivo",
-          borderWidth: 3,
-          borderStyle: "solid",
-          borderColor: "rgba(0,230,118,0.45)",
-          boxShadow: "0 0 80px rgba(0,230,118,0.25)",
         }}
       >
         <div style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between", alignItems: "center" }}>
@@ -91,26 +85,26 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
               display: "flex",
               alignItems: "center",
               fontFamily: "Barlow Condensed",
-              fontSize: 24,
+              fontSize: 30,
               color: C.foreground,
               textTransform: "uppercase",
               letterSpacing: 4,
             }}
           >
-            <div style={{ display: "flex", width: 10, height: 10, borderRadius: 5, backgroundColor: C.green, marginRight: 10 }} />
+            <div style={{ display: "flex", width: 14, height: 14, borderRadius: 7, backgroundColor: C.green, marginRight: 14 }} />
             Transfergit
           </div>
           <div
             style={{
               display: "flex",
               fontFamily: "Archivo Black",
-              fontSize: 24,
+              fontSize: 26,
               color: C.green,
               borderWidth: 2,
               borderStyle: "solid",
               borderColor: C.green,
               borderRadius: 999,
-              padding: "6px 20px",
+              padding: "8px 22px",
             }}
           >
             #{rank}
@@ -123,8 +117,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
         <img
           src={player.avatarUrl}
           alt=""
-          width={480}
-          height={480}
+          width={440}
+          height={440}
           style={{ borderRadius: 40, borderWidth: 3, borderStyle: "solid", borderColor: C.border }}
         />
 
@@ -132,9 +126,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           style={{
             display: "flex",
             fontFamily: "Archivo Black",
-            fontSize: 64,
+            fontSize: 72,
             color: C.foreground,
-            marginTop: 40,
+            marginTop: 48,
             textAlign: "center",
             textTransform: "uppercase",
           }}
@@ -142,17 +136,46 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           {displayName}
         </div>
         {displayName !== `@${player.login}` && (
-          <div style={{ display: "flex", fontSize: 28, color: C.green, marginTop: 10 }}>@{player.login}</div>
+          <div style={{ display: "flex", fontSize: 32, color: C.green, marginTop: 12 }}>@{player.login}</div>
+        )}
+
+        <div style={{ display: "flex", flex: 1 }} />
+
+        <div
+          style={{
+            display: "flex",
+            fontFamily: "Archivo Black",
+            fontSize: 120,
+            color: C.green,
+            textAlign: "center",
+          }}
+        >
+          {player.marketValueFormatted}
+        </div>
+        {trend && trend.direction !== "flat" && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 34,
+              fontWeight: 700,
+              marginTop: 8,
+              color: trend.direction === "up" ? C.green : C.red,
+            }}
+          >
+            <OgTrendArrow direction={trend.direction} size={26} color={trend.direction === "up" ? C.green : C.red} />
+            <div style={{ display: "flex", marginLeft: 8 }}>{Math.abs(trend.pct).toFixed(1)}%</div>
+          </div>
         )}
 
         <div style={{ display: "flex", flex: 1 }} />
 
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: "100%", justifyContent: "space-around" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 34, color: C.foreground }}>
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.foreground }}>
               {formatCompactNumber(player.trophies.followers)}
             </div>
-            <div style={{ display: "flex", fontSize: 15, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+            <div style={{ display: "flex", fontSize: 17, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
               Followers
             </div>
           </div>
@@ -160,34 +183,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           <Divider />
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 34, color: C.foreground }}>
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.foreground }}>
               {countryCode}·{abbreviatePosition(player.position.main)}
             </div>
-            <div style={{ display: "flex", fontSize: 15, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+            <div style={{ display: "flex", fontSize: 17, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
               Position
-            </div>
-          </div>
-
-          <Divider />
-
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-              <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 34, color: C.green }}>
-                {player.marketValueFormatted}
-              </div>
-              {trend && trend.direction !== "flat" && (
-                <div style={{ display: "flex", marginLeft: 8 }}>
-                  <OgTrendArrow direction={trend.direction} size={20} color={trend.direction === "up" ? C.green : C.red} />
-                </div>
-              )}
-            </div>
-            <div style={{ display: "flex", fontSize: 15, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
-              Value
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 40 }}>
+        <div style={{ display: "flex", fontSize: 24, color: C.muted, marginTop: 40 }}>
           {siteHost}/{player.login}
         </div>
       </div>

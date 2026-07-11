@@ -48,6 +48,15 @@ export interface GithubProfile {
   externalMergedPRs: number;
   maxExternalPRRepoStars: number;
   closedIssues: number;
+  worldCupRepos: WorldCupRepo[];
+}
+
+// Distinct 10k+ star repos the user landed a merged external PR in — each is
+// its own "World Cup Player" occurrence (lib/achievements.ts).
+export interface WorldCupRepo {
+  name: string;
+  stars: number;
+  year: number;
 }
 
 export interface MarketValuePoint {
@@ -60,6 +69,7 @@ export interface SeasonStat {
   activeDays: number;
   commits: number;
   pullRequests: number;
+  reviews: number;
   issues: number;
   totalContributions: number;
   hasData: boolean;
@@ -151,4 +161,5 @@ export interface Player {
   seasons: SeasonStat[];
   transfers: TransferRecord[];
   injuries: Injury[];
+  worldCupRepos: WorldCupRepo[];
 }

@@ -5,7 +5,7 @@ export function ScoutingMetrics({ ratings }: { ratings: RatingMetric[] }) {
   return (
     <div data-reveal="scouting" className="overflow-hidden rounded-xl tm-card">
       <SectionHeader title="Scouting metrics" />
-      <div className="space-y-3 p-4">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-4 p-4 md:grid-cols-2">
         {ratings.map((rating) => (
           <div key={rating.key} data-reveal-row>
             <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -13,7 +13,7 @@ export function ScoutingMetrics({ ratings }: { ratings: RatingMetric[] }) {
                 <span className="font-semibold">{rating.label}</span>{" "}
                 <span className="text-xs text-muted">· {rating.rawLabel}</span>
               </div>
-              <span className="font-display text-lg font-bold tabular-nums text-tm-blue-bright">
+              <span className="font-display text-lg font-bold tabular-nums text-value-green">
                 {rating.score}
               </span>
             </div>
@@ -21,7 +21,7 @@ export function ScoutingMetrics({ ratings }: { ratings: RatingMetric[] }) {
               <div
                 data-reveal-bar
                 data-score={rating.score}
-                className="h-full rounded-full bg-gradient-to-r from-tm-blue to-tm-blue-bright"
+                className="h-full rounded-full bg-value-green"
                 style={{ width: `${rating.score}%` }}
               />
             </div>

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Archivo, Archivo_Black, Barlow_Condensed } from "next/font/google";
+import { Archivo, Archivo_Black, Barlow_Condensed, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { ValuationModal } from "@/components/ValuationModal";
 import { ValuationModalProvider } from "@/components/ValuationModalContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { getSiteUrl } from "@/lib/site-url";
 
 const display = Archivo_Black({
   variable: "--font-display",
@@ -24,7 +25,14 @@ const body = Archivo({
   weight: ["400", "500", "600", "700"],
 });
 
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: "Transfergit — Your GitHub, valued like a football player",
   description:
     "Turn any GitHub profile into a Transfermarkt-style player card: market value, position, seasons, transfers and injuries.",
@@ -38,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${table.variable} ${body.variable} h-full antialiased`}
+      className={`${display.variable} ${table.variable} ${body.variable} ${mono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-dvh flex flex-col bg-pitch text-foreground">

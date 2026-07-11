@@ -9,13 +9,17 @@ import { gsap } from "gsap";
 export function CountUp({
   value,
   className,
+  style,
   prefix = "",
   suffix = "",
+  formatter,
 }: {
   value: number;
   className?: string;
+  style?: React.CSSProperties;
   prefix?: string;
   suffix?: string;
+  formatter?: (n: number) => string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [display, setDisplay] = useState(0);
@@ -49,10 +53,8 @@ export function CountUp({
   }, [value]);
 
   return (
-    <span ref={ref} className={className}>
-      {prefix}
-      {display}
-      {suffix}
+    <span ref={ref} className={className} style={style}>
+      {formatter ? formatter(display) : `${prefix}${display}${suffix}`}
     </span>
   );
 }

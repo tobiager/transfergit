@@ -1,4 +1,4 @@
-import type { AchievementStats, GithubProfile, Player, SeasonStat, TransferRecord } from "./types";
+import type { AchievementStats, GithubOrg, GithubProfile, Player, SeasonStat, TransferRecord } from "./types";
 import type { StreakInfo } from "./injuries";
 import { computeValuationTimeline } from "./valuation";
 import { computePosition, countDistinctLanguages, dominantLanguageForRepos } from "./positions";
@@ -30,6 +30,7 @@ function buildSeasons(profile: GithubProfile): SeasonStat[] {
       activeDays,
       commits: c.commits,
       pullRequests: c.pullRequests,
+      reviews: c.reviews,
       issues: c.issues,
       totalContributions: c.totalContributions,
       hasData: c.totalContributions > 0,
@@ -104,6 +105,44 @@ function buildTransfers(profile: GithubProfile, marketValueByYear: Map<number, n
   });
 
   return transfers.sort((a, b) => Number(a.season) - Number(b.season));
+}
+
+// Richer transfer history for accounts with orgs whose join year we could
+// resolve (see fetchOrgJoinYears): a real multi-club career instead of the
+// single "GitHub Academy" origin move. Returns null when no org join year
+// could be resolved, so the caller can fall back to buildTransfers().
+export function buildOrgTransfers(
+  profile: GithubProfile,
+  orgJoinYears: Record<string, number | null>,
+  marketValueByYear: Map<number, number>
+): TransferRecord[] | null {
+  const createdYear = new Date(profile.createdAt).getFullYear();
+
+  const moves = profile.organizations
+    .map((org) => ({ org, year: orgJoinYears[org.login] }))
+    .filter((m): m is { org: GithubOrg; year: number } => m.year != null)
+    .sort((a, b) => a.year - b.year);
+
+  if (moves.length === 0) return null;
+
+  const records: TransferRecord[] = [
+    { season: `${createdYear}`, from: "No club", to: "GitHub Academy", fee: "Free transfer" },
+  ];
+
+  let previousClub = "GitHub Academy";
+  for (const { org, year } of moves) {
+    const clubName = org.name ?? org.login;
+    const yearValue = marketValueByYear.get(year);
+    records.push({
+      season: `${Math.max(year, createdYear)}`,
+      from: previousClub,
+      to: clubName,
+      fee: yearValue ? formatMarketValue(yearValue) : "Free transfer",
+    });
+    previousClub = clubName;
+  }
+
+  return records;
 }
 
 // A full calendar year with zero contributions, followed by a later year
@@ -234,5 +273,6 @@ export function buildPlayer(profile: GithubProfile): Player {
     seasons,
     transfers: buildTransfers(profile, marketValueByYear),
     injuries,
+    worldCupRepos: profile.worldCupRepos,
   };
 }

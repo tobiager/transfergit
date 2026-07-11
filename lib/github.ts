@@ -1,5 +1,5 @@
 import "server-only";
-import type { ContributionDay, GithubOrg, GithubProfile, GithubRepo, YearContribution } from "./types";
+import type { ContributionDay, GithubOrg, GithubProfile, GithubRepo, WorldCupRepo, YearContribution } from "./types";
 
 const GITHUB_GRAPHQL_ENDPOINT = "https://api.github.com/graphql";
 
@@ -86,7 +86,7 @@ interface SearchIssueCount {
 }
 
 interface PullRequestSearchResult extends SearchIssueCount {
-  nodes: Array<{ repository?: { stargazerCount: number } }>;
+  nodes: Array<{ repository?: { name: string; stargazerCount: number }; mergedAt?: string }>;
 }
 
 interface FullProfileResponse {
@@ -135,6 +135,46 @@ interface YearAliasData {
   contributionCalendar: { totalContributions: number };
 }
 
+// Approximates the year a user "joined" each of their (max 3) GitHub orgs:
+// the year of their earliest authored commit in a repo owned by that org.
+// GitHub doesn't expose an org join date, and one REST search-commits call
+// per org is the cheapest stand-in — capped at 3 so a profile with many
+// orgs doesn't fan out into a pile of extra requests.
+export async function fetchOrgJoinYears(
+  login: string,
+  orgLogins: string[]
+): Promise<Record<string, number | null>> {
+  const token = process.env.GITHUB_TOKEN;
+  const result: Record<string, number | null> = {};
+
+  for (const org of orgLogins.slice(0, 3)) {
+    try {
+      const q = encodeURIComponent(`author:${login} org:${org}`);
+      const res = await fetch(
+        `https://api.github.com/search/commits?q=${q}&sort=author-date&order=asc&per_page=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          next: { revalidate: 3600 },
+        }
+      );
+      if (!res.ok) {
+        result[org] = null;
+        continue;
+      }
+      const json = await res.json();
+      const date: string | undefined = json.items?.[0]?.commit?.author?.date;
+      result[org] = date ? new Date(date).getFullYear() : null;
+    } catch {
+      result[org] = null;
+    }
+  }
+
+  return result;
+}
+
 export async function fetchGithubProfile(login: string): Promise<GithubProfile | null> {
   try {
     const createdAtData = await githubGraphQL<CreatedAtResponse>(
@@ -168,7 +208,8 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
           issueCount
           nodes {
             ... on PullRequest {
-              repository { stargazerCount }
+              mergedAt
+              repository { name stargazerCount }
             }
           }
         }
@@ -257,6 +298,21 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       0
     );
 
+    // Distinct 10k+ star repos with a merged external PR — each is its own
+    // "World Cup Player" occurrence, keyed by repo name and dated by the
+    // earliest merge (a repo can have several merged PRs from this user).
+    const worldCupRepoMap = new Map<string, WorldCupRepo>();
+    for (const node of data.externalMergedPRs.nodes) {
+      const repo = node.repository;
+      if (!repo || repo.stargazerCount < 10_000 || !node.mergedAt) continue;
+      const year = new Date(node.mergedAt).getFullYear();
+      const existing = worldCupRepoMap.get(repo.name);
+      if (!existing || year < existing.year) {
+        worldCupRepoMap.set(repo.name, { name: repo.name, stars: repo.stargazerCount, year });
+      }
+    }
+    const worldCupRepos = [...worldCupRepoMap.values()].sort((a, b) => a.year - b.year);
+
     const profile: GithubProfile = {
       login: user.login,
       name: user.name,
@@ -278,6 +334,7 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       externalMergedPRs: data.externalMergedPRs.issueCount,
       maxExternalPRRepoStars,
       closedIssues: data.closedIssues.issueCount,
+      worldCupRepos,
     };
 
     return profile;

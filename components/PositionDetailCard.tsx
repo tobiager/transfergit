@@ -12,7 +12,7 @@ export function PositionDetailCard({ position }: { position: Player["position"] 
         </div>
         <div className="mt-3 flex justify-center gap-4 text-xs">
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-tm-blue-bright" /> {position.main}
+            <span className="h-2.5 w-2.5 rounded-full bg-value-green" /> {position.main}
           </span>
           {position.secondary !== position.main && (
             <span className="flex items-center gap-1.5">

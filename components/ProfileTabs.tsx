@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 
 const TABS = [
-  { id: "profile", label: "Profile" },
-  { id: "market-value", label: "Market Value" },
-  { id: "trophies", label: "Trophies" },
+  { id: "overview", label: "Overview" },
+  { id: "transfers", label: "Transfers" },
   { id: "stats", label: "Stats" },
+  { id: "injuries", label: "Injuries" },
+  { id: "trophies", label: "Trophies" },
 ];
 
 export function ProfileTabs() {
@@ -58,7 +59,7 @@ export function ProfileTabs() {
   }
 
   return (
-    <div className="sticky top-[57px] z-30 border-b border-border bg-pitch/95 backdrop-blur-md">
+    <div className="sticky top-16 z-30 border-b border-border bg-pitch/95 backdrop-blur-md">
       <nav ref={navRef} className="relative mx-auto flex w-full max-w-7xl gap-1 overflow-x-auto px-4 md:px-6">
         {TABS.map((tab) => (
           <a
@@ -69,7 +70,7 @@ export function ProfileTabs() {
             href={`#${tab.id}`}
             onClick={(e) => handleClick(e, tab.id)}
             className={`relative shrink-0 whitespace-nowrap px-4 py-3 font-table text-sm font-semibold uppercase tracking-wide transition-colors ${
-              active === tab.id ? "text-tm-blue-bright" : "text-muted hover:text-foreground"
+              active === tab.id ? "text-value-green" : "text-muted hover:text-foreground"
             }`}
           >
             {tab.label}
@@ -78,7 +79,7 @@ export function ProfileTabs() {
         <span
           ref={indicatorRef}
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-tm-blue-bright"
+          className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-value-green"
         />
       </nav>
     </div>
