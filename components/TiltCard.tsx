@@ -8,6 +8,7 @@ const MAX_TILT_DEG = 4;
 export function TiltCard({
   children,
   className,
+  style,
   ...rest
 }: { children: ReactNode; className?: string } & HTMLAttributes<HTMLDivElement>) {
   const ref = useRef<HTMLDivElement>(null);
@@ -38,7 +39,7 @@ export function TiltCard({
       className={className}
       {...rest}
       style={{
-        transformStyle: "preserve-3d",
+        ...style,
         transition: "transform 0.15s ease-out",
         willChange: "transform",
       }}

@@ -1,19 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TiltCard } from "./TiltCard";
 
-type Variant = "card" | "story" | "social";
+type Variant = "readme" | "card" | "story" | "social";
 
 const VARIANT_META: Record<Variant, { path: string; width: number; height: number; label: string; ratio: string }> = {
+  readme: { path: "/readme", width: 1200, height: 1500, label: "README · Full", ratio: "4:5" },
   card: { path: "/card", width: 1200, height: 1600, label: "Player card", ratio: "3:4" },
   story: { path: "/story", width: 1080, height: 1920, label: "Story", ratio: "9:16" },
   social: { path: "/social", width: 1200, height: 630, label: "Banner", ratio: "16:9" },
 };
 
 export function ExportPanel({ login, marketValueFormatted }: { login: string; marketValueFormatted: string }) {
-  const [variant, setVariant] = useState<Variant>("card");
+  const [variant, setVariant] = useState<Variant>("readme");
   const [toast, setToast] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState<Record<Variant, boolean>>({ card: false, story: false, social: false });
+  const [loaded, setLoaded] = useState<Record<Variant, boolean>>({
+    readme: false,
+    card: false,
+    story: false,
+    social: false,
+  });
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
@@ -39,7 +46,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   }
 
   async function copyMarkdown() {
-    const markdown = `[![${login} — Transfergit](${origin}${imagePath("card")})](${profileUrl()})`;
+    const markdown = `[![${login} — Transfergit](${origin}${imagePath("readme")})](${profileUrl()})`;
     try {
       await navigator.clipboard.writeText(markdown);
       showToast("Copied! Paste it in your README");
@@ -75,7 +82,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   const meta = VARIANT_META[variant];
 
   return (
-    <div data-reveal="share" className="relative overflow-hidden rounded-xl tm-card">
+    <div data-reveal="share" className="relative overflow-hidden rounded-xl tm-card tm-card-green">
       {toast && (
         <div className="absolute right-4 top-4 z-10 rounded-md bg-value-green px-3 py-1.5 text-xs font-semibold text-pitch shadow-lg">
           {toast}
@@ -84,9 +91,9 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
 
       <div className="grid grid-cols-1 gap-8 p-6 md:grid-cols-2 md:p-10">
         <div className="flex justify-center">
-          <div
+          <TiltCard
             className="glow-green-border relative overflow-hidden rounded-2xl border bg-surface"
-            style={{ width: "100%", maxWidth: 340, aspectRatio: `${meta.width} / ${meta.height}` }}
+            style={{ width: "100%", maxWidth: 340, height: 540 }}
           >
             {!loaded[variant] && <div className="shimmer absolute inset-0" aria-hidden />}
             {/* eslint-disable-next-line @next/next/no-img-element -- this is the real, unoptimized OG endpoint image (preview = exact export), next/image's optimizer adds nothing here. */}
@@ -99,7 +106,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
                 loaded[variant] ? "opacity-100" : "opacity-0"
               }`}
             />
-          </div>
+          </TiltCard>
         </div>
 
         <div className="flex flex-col justify-center">
