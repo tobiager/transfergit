@@ -195,6 +195,24 @@ body,
   }
 }
 
+/* Selective tint accents on top of .tm-card — injury (red), trophies
+   (gold) and export (green) each get a whole-card wash; every other
+   section keeps the plain neutral glass border. */
+.tm-card-red {
+  border-color: rgba(255, 61, 87, 0.25);
+  background: rgba(255, 61, 87, 0.03);
+}
+
+.tm-card-gold {
+  border-color: rgba(255, 196, 0, 0.25);
+  background: linear-gradient(180deg, rgba(255, 196, 0, 0.06), rgba(255, 255, 255, 0.02));
+}
+
+.tm-card-green {
+  border-color: rgba(0, 200, 83, 0.3);
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.1), rgba(8, 12, 24, 0.6) 45%);
+}
+
 @keyframes record-pulse {
   0%,
   100% {

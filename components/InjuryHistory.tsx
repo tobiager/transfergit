@@ -21,8 +21,12 @@ const INJURY_BLURBS: Record<string, string> = {
 
 export function InjuryHistory({ injuries }: { injuries: Player["injuries"] }) {
   return (
-    <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
-      <SectionHeader title="Injury History" right={`${injuries.length} spells`} />
+    <div data-reveal-item className="overflow-hidden rounded-xl tm-card tm-card-red">
+      <SectionHeader
+        title="Injury History"
+        right={`${injuries.length} spells`}
+        titleClassName="text-[#ff6b7a]"
+      />
       {injuries.length === 0 ? (
         <p className="px-4 py-4 text-sm font-medium text-value-green">Clean injury record 💪</p>
       ) : (

@@ -35,7 +35,7 @@ export function TrophyCabinetClient({
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
+    <div data-reveal-item className="overflow-hidden rounded-xl tm-card tm-card-gold">
       <SectionHeader
         title="Trophy Cabinet"
         right={
@@ -43,6 +43,7 @@ export function TrophyCabinetClient({
             <CountUp value={honours} /> honours
           </>
         }
+        titleClassName="text-gold"
       />
 
       {top5.length > 0 ? (

@@ -15,7 +15,7 @@ export function PlayerHeader({ player, rank }: { player: Player; rank: number })
   const trend = computeMarketValueTrend(player.marketValueHistory);
 
   return (
-    <TiltCard data-reveal="header" className="tm-card rounded-xl p-5 md:p-6">
+    <TiltCard data-reveal="header" className="px-1">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start lg:flex-1">
           <div className="relative shrink-0 pb-4">
@@ -29,7 +29,10 @@ export function PlayerHeader({ player, rank }: { player: Player; rank: number })
                 priority
               />
             </div>
-            <span className="glow-green absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-value-green bg-pitch px-2.5 py-0.5 font-display text-sm text-value-green">
+            <span
+              title="Rank vs legends"
+              className="glow-green absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-value-green bg-pitch px-2.5 py-0.5 font-display text-sm text-value-green"
+            >
               #{rank}
             </span>
           </div>
@@ -82,7 +85,7 @@ export function PlayerHeader({ player, rank }: { player: Player; rank: number })
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 border-t border-border pt-4 text-sm text-muted sm:justify-start">
+      <div className="mx-auto mt-5 flex w-fit flex-wrap items-center justify-center gap-x-3 gap-y-1.5 border-t border-border pt-4 text-sm text-muted sm:mx-0 sm:justify-start">
         <Fact>
           Agent: <span className="font-medium text-foreground">{player.agent}</span>
         </Fact>

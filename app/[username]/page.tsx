@@ -77,7 +77,7 @@ export default async function PlayerPage({ params }: PageProps) {
   const statCards: StatCardData[] = [
     {
       label: "Followers",
-      sublabel: `Rank #${overallRanking.rank}`,
+      sublabel: `Rank #${overallRanking.rank} vs legends`,
       value: player.trophies.followers,
       compact: true,
       ringPercent: followersPercentile,
@@ -114,8 +114,8 @@ export default async function PlayerPage({ params }: PageProps) {
 
   return (
     <ProfileReveal>
-      <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pt-6 md:px-6">
-        <div id="overview" className="scroll-mt-28 space-y-4">
+      <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pt-8 md:px-6">
+        <div id="overview" className="scroll-mt-28 space-y-6">
           <PlayerHeader player={player} rank={overallRanking.rank} />
           <StatCards items={statCards} />
         </div>
