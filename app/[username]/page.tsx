@@ -13,6 +13,7 @@ import { InjuryHistory } from "@/components/InjuryHistory";
 import { ScoutingMetrics } from "@/components/ScoutingMetrics";
 import { TrophyCabinet } from "@/components/TrophyCabinet";
 import { ExportPanel } from "@/components/ExportPanel";
+import { ScoutCta } from "@/components/ScoutCta";
 import { ProfileReveal } from "@/components/ProfileReveal";
 import { ProfileTabs } from "@/components/ProfileTabs";
 import { StatCards, type StatCardData } from "@/components/StatCards";
@@ -167,6 +168,8 @@ export default async function PlayerPage({ params }: PageProps) {
         <div id="export" className="scroll-mt-28">
           <ExportPanel login={player.login} marketValueFormatted={player.marketValueFormatted} />
         </div>
+
+        <ScoutCta />
       </main>
       <Footer />
     </ProfileReveal>

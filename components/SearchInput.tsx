@@ -7,10 +7,18 @@ export function SearchInput({
   compact = false,
   placeholder = "github-username",
   autoFocus = false,
+  reveal = true,
 }: {
   compact?: boolean;
   placeholder?: string;
   autoFocus?: boolean;
+  // Set false outside the landing hero: the "data-reveal" scroll-in
+  // animation is driven by ProfileReveal's ScrollTrigger scan, which only
+  // reliably resolves for above-the-fold placements — reused far down a
+  // long, image-heavy page (e.g. the profile's bottom CTA), the trigger
+  // point can end up past the page's actual scrollable range and the
+  // input never fades in at all.
+  reveal?: boolean;
 }) {
   const [value, setValue] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -55,7 +63,7 @@ export function SearchInput({
   }
 
   return (
-    <form data-reveal="input" onSubmit={handleSubmit} className="flex w-full max-w-lg gap-2">
+    <form {...(reveal ? { "data-reveal": "input" } : {})} onSubmit={handleSubmit} className="flex w-full max-w-lg gap-2">
       <div className="relative flex-1">
         <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 font-mono text-lg text-value-green">
           @

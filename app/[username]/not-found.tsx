@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchInput } from "@/components/SearchInput";
 
 export default function PlayerNotFound() {
   return (
@@ -10,10 +11,10 @@ export default function PlayerNotFound() {
       <p className="mt-3 max-w-md text-muted">
         That GitHub username doesn&apos;t exist, or they&apos;ve gone free agent from every market. Try another name.
       </p>
-      <Link
-        href="/"
-        className="mt-6 rounded-md bg-tm-blue-bright px-5 py-3 font-display font-bold uppercase tracking-wide text-pitch transition-colors hover:bg-white"
-      >
+      <div className="mt-6">
+        <SearchInput autoFocus placeholder="github-username" />
+      </div>
+      <Link href="/" className="mt-6 text-sm text-muted hover:text-foreground">
         Back to the market
       </Link>
     </main>
