@@ -6,10 +6,12 @@ import { OgTrendArrow } from "../../_shared/OgTrendArrow";
 import { formatCardName } from "../../_shared/cardContent";
 import { buildChartGeometry, buildSparklinePaths } from "../../_shared/sparkline";
 import { getSiteHost } from "@/lib/site-url";
-import { rankAgainstReference } from "@/lib/ranking";
+import { percentileTier } from "@/lib/ranking";
 import { computeMarketValueTrend, formatCompactNumber, formatCompactValue, formatNumber } from "@/lib/format";
 import { abbreviatePosition } from "@/lib/positions";
 import { evaluateAchievements, topTrophies } from "@/lib/achievements";
+import { LanguageBadge } from "../../_shared/languageIcon";
+import { FlagBadge } from "../../_shared/flagIcon";
 
 export const runtime = "edge";
 
@@ -77,11 +79,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
     });
   }
 
-  const rank = rankAgainstReference(player.login, player.marketValue).rank;
+  const currentSeason = player.seasons[0];
+  const tier = percentileTier({
+    stars: player.trophies.stars,
+    commits: currentSeason?.commits ?? 0,
+    followers: player.trophies.followers,
+  });
   const siteHost = getSiteHost();
   const trend = computeMarketValueTrend(player.marketValueHistory);
   const displayName = formatCardName(player.name, player.login);
-  const countryCode = player.nationalityIso2 ? player.nationalityIso2.toUpperCase() : "??";
 
   const sparkline = buildSparklinePaths(player.marketValueHistory, 260, 60);
 
@@ -137,8 +143,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
             <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 40, color: C.foreground, textTransform: "uppercase" }}>
               {displayName}
             </div>
-            <div style={{ display: "flex", fontSize: 18, color: C.muted, marginTop: 2 }}>
-              {countryCode} · {player.position.main} ({abbreviatePosition(player.position.main)}) · {player.currentClub}
+            <div style={{ display: "flex", alignItems: "center", marginTop: 6 }}>
+              <FlagBadge iso2={player.nationalityIso2} size={20} />
+              <div style={{ display: "flex", fontSize: 18, color: C.muted, marginLeft: 8 }}>
+                {player.position.main} ({abbreviatePosition(player.position.main)}) · {player.currentClub}
+              </div>
+              <div style={{ display: "flex", marginLeft: 16 }}>
+                <LanguageBadge language={player.provider} size={22} />
+              </div>
+              <div style={{ display: "flex", fontSize: 18, color: C.muted, marginLeft: 8 }}>{player.provider}</div>
             </div>
           </div>
           <div
@@ -154,7 +167,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
               padding: "6px 18px",
             }}
           >
-            #{rank}
+            {tier}
           </div>
         </div>
 

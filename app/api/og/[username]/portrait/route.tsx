@@ -13,10 +13,9 @@ import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 
 export const runtime = "edge";
 
-// 1200x1200 (1:1): the minimal "player card" — dense top-to-bottom like the
-// reference (avatar, name, identity divider, 3-stat grid), sized to the
-// content instead of a tall canvas with a flex spacer soaking up dead space.
-const WIDTH = 1200;
+// 900x1200 (3:4): the same identity + 3-stat-grid anatomy as the 1:1 card,
+// just narrower and taller — for slots that want a classic portrait crop.
+const WIDTH = 900;
 const HEIGHT = 1200;
 const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
 
@@ -32,7 +31,7 @@ function NotFoundImage() {
         backgroundColor: C.pitch,
         color: C.foreground,
         fontFamily: "Archivo Black",
-        fontSize: 40,
+        fontSize: 32,
         textAlign: "center",
       }}
     >
@@ -42,7 +41,7 @@ function NotFoundImage() {
 }
 
 function Divider() {
-  return <div style={{ display: "flex", width: 1, height: 64, backgroundColor: C.border }} />;
+  return <div style={{ display: "flex", width: 1, height: 52, backgroundColor: C.border }} />;
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ username: string }> }) {
@@ -82,7 +81,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           alignItems: "center",
           backgroundColor: C.pitch,
           backgroundImage: "radial-gradient(circle at 50% -10%, rgba(0,230,118,0.12), transparent 55%)",
-          padding: 64,
+          padding: 48,
           position: "relative",
           fontFamily: "Archivo",
           borderWidth: 3,
@@ -97,26 +96,26 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
               display: "flex",
               alignItems: "center",
               fontFamily: "Barlow Condensed",
-              fontSize: 24,
+              fontSize: 20,
               color: C.foreground,
               textTransform: "uppercase",
-              letterSpacing: 4,
+              letterSpacing: 3,
             }}
           >
-            <div style={{ display: "flex", width: 10, height: 10, borderRadius: 5, backgroundColor: C.green, marginRight: 10 }} />
+            <div style={{ display: "flex", width: 9, height: 9, borderRadius: 5, backgroundColor: C.green, marginRight: 8 }} />
             Transfergit
           </div>
           <div
             style={{
               display: "flex",
               fontFamily: "Archivo Black",
-              fontSize: 22,
+              fontSize: 18,
               color: C.green,
               borderWidth: 2,
               borderStyle: "solid",
               borderColor: C.green,
               borderRadius: 999,
-              padding: "6px 20px",
+              padding: "5px 16px",
               letterSpacing: 1,
             }}
           >
@@ -128,11 +127,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
         <img
           src={player.avatarUrl}
           alt=""
-          width={560}
-          height={560}
+          width={620}
+          height={620}
           style={{
-            marginTop: 48,
-            borderRadius: 44,
+            marginTop: 36,
+            borderRadius: 40,
             borderWidth: 3,
             borderStyle: "solid",
             borderColor: C.green,
@@ -144,21 +143,21 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           style={{
             display: "flex",
             fontFamily: "Archivo Black",
-            fontSize: 60,
+            fontSize: 46,
             color: C.foreground,
-            marginTop: 36,
+            marginTop: 28,
             textAlign: "center",
             textTransform: "uppercase",
-            letterSpacing: 2,
+            letterSpacing: 1,
           }}
         >
           {displayName}
         </div>
         {displayName !== `@${player.login}` && (
-          <div style={{ display: "flex", fontSize: 30, color: C.green, marginTop: 10 }}>@{player.login}</div>
+          <div style={{ display: "flex", fontSize: 24, color: C.green, marginTop: 8 }}>@{player.login}</div>
         )}
 
-        <div style={{ display: "flex", width: "100%", height: 1, backgroundColor: C.border, marginTop: 28 }} />
+        <div style={{ display: "flex", width: "100%", height: 1, backgroundColor: C.border, marginTop: 24 }} />
 
         <div
           style={{
@@ -167,15 +166,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
             alignItems: "center",
             width: "100%",
             justifyContent: "space-around",
-            marginTop: 32,
+            marginTop: 28,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <LanguageBadge language={player.provider} size={64} />
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground, marginTop: 10, textTransform: "uppercase" }}>
+            <LanguageBadge language={player.provider} size={52} />
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 18, color: C.foreground, marginTop: 8, textTransform: "uppercase" }}>
               {player.provider}
             </div>
-            <div style={{ display: "flex", fontSize: 15, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+            <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
               Stack
             </div>
           </div>
@@ -183,19 +182,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           <Divider />
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <FlagBadge iso2={player.nationalityIso2} size={40} />
+            <FlagBadge iso2={player.nationalityIso2} size={32} />
             <div
               style={{
                 display: "flex",
                 fontFamily: "Archivo Black",
-                fontSize: 44,
+                fontSize: 36,
                 color: C.foreground,
-                marginTop: hasFlag ? 10 : 0,
+                marginTop: hasFlag ? 8 : 0,
               }}
             >
               {abbreviatePosition(player.position.main)}
             </div>
-            <div style={{ display: "flex", fontSize: 15, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+            <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
               Position
             </div>
           </div>
@@ -204,22 +203,22 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-              <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 48, color: C.green }}>
+              <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.green }}>
                 {player.marketValueFormatted}
               </div>
               {trend && trend.direction !== "flat" && (
-                <div style={{ display: "flex", marginLeft: 8 }}>
-                  <OgTrendArrow direction={trend.direction} size={24} color={trend.direction === "up" ? C.green : C.red} />
+                <div style={{ display: "flex", marginLeft: 6 }}>
+                  <OgTrendArrow direction={trend.direction} size={20} color={trend.direction === "up" ? C.green : C.red} />
                 </div>
               )}
             </div>
-            <div style={{ display: "flex", fontSize: 15, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+            <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
               Value
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 56 }}>
+        <div style={{ display: "flex", fontSize: 18, color: C.muted, marginTop: 44 }}>
           {siteHost}/{player.login}
         </div>
       </div>

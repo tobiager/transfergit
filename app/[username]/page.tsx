@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchGithubProfile, fetchOrgJoinYears } from "@/lib/github";
 import { buildPlayer, buildOrgTransfers } from "@/lib/player";
-import { rankAgainstReference, percentileOf } from "@/lib/ranking";
+import { percentileOf, percentileTier } from "@/lib/ranking";
 import { PlayerHeader } from "@/components/PlayerHeader";
 import { MarketValueChart } from "@/components/MarketValueChart";
 import { SeasonStatsSummary } from "@/components/SeasonStatsSummary";
@@ -68,17 +68,21 @@ export default async function PlayerPage({ params }: PageProps) {
     if (orgTransfers) player = { ...player, transfers: orgTransfers };
   }
 
-  const overallRanking = rankAgainstReference(player.login, player.marketValue);
   const currentSeason = player.seasons[0];
 
   const followersPercentile = percentileOf("followers", player.trophies.followers);
   const starsPercentile = percentileOf("stars", player.trophies.stars);
   const commitsPercentile = percentileOf("commitsThisSeason", currentSeason?.commits ?? 0);
+  const tier = percentileTier({
+    stars: player.trophies.stars,
+    commits: currentSeason?.commits ?? 0,
+    followers: player.trophies.followers,
+  });
 
   const statCards: StatCardData[] = [
     {
       label: "Followers",
-      sublabel: `Rank #${overallRanking.rank} vs legends`,
+      sublabel: tier,
       value: player.trophies.followers,
       compact: true,
       ringPercent: followersPercentile,
@@ -117,7 +121,7 @@ export default async function PlayerPage({ params }: PageProps) {
     <ProfileReveal>
       <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pt-8 md:px-6">
         <div id="overview" className="scroll-mt-28 space-y-6">
-          <PlayerHeader player={player} rank={overallRanking.rank} />
+          <PlayerHeader player={player} tier={tier} />
           <StatCards items={statCards} />
         </div>
       </div>

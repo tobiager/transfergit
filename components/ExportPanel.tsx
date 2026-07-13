@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { TiltCard } from "./TiltCard";
 
-type Variant = "readme" | "card" | "story" | "social";
+type Variant = "readme" | "card" | "portrait" | "story" | "social";
 
 const VARIANT_META: Record<Variant, { path: string; width: number; height: number; label: string; ratio: string }> = {
   readme: { path: "/readme", width: 1200, height: 1500, label: "README · Full", ratio: "4:5" },
-  card: { path: "/card", width: 1200, height: 1600, label: "Player card", ratio: "3:4" },
+  card: { path: "/card", width: 1200, height: 1200, label: "Player card", ratio: "1:1" },
+  portrait: { path: "/portrait", width: 900, height: 1200, label: "Player card · Portrait", ratio: "3:4" },
   story: { path: "/story", width: 1080, height: 1920, label: "Story", ratio: "9:16" },
   social: { path: "/social", width: 1200, height: 630, label: "Banner", ratio: "16:9" },
 };
@@ -18,6 +19,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   const [loaded, setLoaded] = useState<Record<Variant, boolean>>({
     readme: false,
     card: false,
+    portrait: false,
     story: false,
     social: false,
   });

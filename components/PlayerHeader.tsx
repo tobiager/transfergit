@@ -11,7 +11,7 @@ function Fact({ children }: { children: React.ReactNode }) {
   return <span className="whitespace-nowrap">{children}</span>;
 }
 
-export function PlayerHeader({ player, rank }: { player: Player; rank: number }) {
+export function PlayerHeader({ player, tier }: { player: Player; tier: string }) {
   const trend = computeMarketValueTrend(player.marketValueHistory);
 
   return (
@@ -30,10 +30,10 @@ export function PlayerHeader({ player, rank }: { player: Player; rank: number })
               />
             </div>
             <span
-              title="Rank vs legends"
-              className="glow-green absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-value-green bg-pitch px-2.5 py-0.5 font-display text-sm text-value-green"
+              title="Percentile vs GitHub activity benchmarks"
+              className="glow-green absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-value-green bg-pitch px-2.5 py-0.5 font-display text-xs text-value-green"
             >
-              #{rank}
+              {tier}
             </span>
           </div>
 

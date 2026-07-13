@@ -9,7 +9,7 @@ const TRY_USERNAMES = ["torvalds", "yyx990803", "addyosmani"];
 export default function LandingPage() {
   return (
     <LandingReveal>
-      <main className="relative flex h-[calc(100dvh-4rem)] flex-col overflow-hidden">
+      <main className="relative flex min-h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
         <div className="relative mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-8 self-center px-4 py-6 lg:grid-cols-[3fr_2fr] lg:gap-8">
           <div className="order-2 text-center lg:order-1 lg:text-left">
             <p className="font-mono text-sm uppercase tracking-[0.3em] text-tm-blue-bright">

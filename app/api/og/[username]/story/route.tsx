@@ -5,9 +5,11 @@ import { OG_COLORS as C } from "../../_shared/theme";
 import { OgTrendArrow } from "../../_shared/OgTrendArrow";
 import { formatCardName } from "../../_shared/cardContent";
 import { getSiteHost } from "@/lib/site-url";
-import { rankAgainstReference } from "@/lib/ranking";
-import { computeMarketValueTrend, formatCompactNumber } from "@/lib/format";
+import { percentileTier } from "@/lib/ranking";
+import { computeMarketValueTrend } from "@/lib/format";
 import { abbreviatePosition } from "@/lib/positions";
+import { LanguageBadge } from "../../_shared/languageIcon";
+import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 
 export const runtime = "edge";
 
@@ -58,11 +60,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
     });
   }
 
-  const rank = rankAgainstReference(player.login, player.marketValue).rank;
+  const currentSeason = player.seasons[0];
+  const tier = percentileTier({
+    stars: player.trophies.stars,
+    commits: currentSeason?.commits ?? 0,
+    followers: player.trophies.followers,
+  });
   const siteHost = getSiteHost();
   const trend = computeMarketValueTrend(player.marketValueHistory);
   const displayName = formatCardName(player.name, player.login);
-  const countryCode = player.nationalityIso2 ? player.nationalityIso2.toUpperCase() : "??";
+  const hasFlag = Boolean(flagUrl(player.nationalityIso2));
 
   return new ImageResponse(
     (
@@ -107,7 +114,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
               padding: "8px 22px",
             }}
           >
-            #{rank}
+            {tier}
           </div>
         </div>
 
@@ -172,19 +179,29 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
 
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: "100%", justifyContent: "space-around" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.foreground }}>
-              {formatCompactNumber(player.trophies.followers)}
+            <LanguageBadge language={player.provider} size={56} />
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 24, color: C.foreground, marginTop: 8, textTransform: "uppercase" }}>
+              {player.provider}
             </div>
             <div style={{ display: "flex", fontSize: 17, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
-              Followers
+              Stack
             </div>
           </div>
 
           <Divider />
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.foreground }}>
-              {countryCode}·{abbreviatePosition(player.position.main)}
+            <FlagBadge iso2={player.nationalityIso2} size={36} />
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Archivo Black",
+                fontSize: 38,
+                color: C.foreground,
+                marginTop: hasFlag ? 8 : 0,
+              }}
+            >
+              {abbreviatePosition(player.position.main)}
             </div>
             <div style={{ display: "flex", fontSize: 17, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
               Position

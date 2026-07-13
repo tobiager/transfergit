@@ -5,9 +5,11 @@ import { OG_COLORS as C } from "../../_shared/theme";
 import { OgTrendArrow } from "../../_shared/OgTrendArrow";
 import { formatCardName } from "../../_shared/cardContent";
 import { getSiteHost } from "@/lib/site-url";
-import { rankAgainstReference } from "@/lib/ranking";
-import { computeMarketValueTrend, formatCompactNumber } from "@/lib/format";
+import { percentileTier } from "@/lib/ranking";
+import { computeMarketValueTrend } from "@/lib/format";
 import { abbreviatePosition } from "@/lib/positions";
+import { LanguageBadge } from "../../_shared/languageIcon";
+import { FlagBadge } from "../../_shared/flagIcon";
 
 export const runtime = "edge";
 
@@ -53,11 +55,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
     });
   }
 
-  const rank = rankAgainstReference(player.login, player.marketValue).rank;
+  const currentSeason = player.seasons[0];
+  const tier = percentileTier({
+    stars: player.trophies.stars,
+    commits: currentSeason?.commits ?? 0,
+    followers: player.trophies.followers,
+  });
   const siteHost = getSiteHost();
   const trend = computeMarketValueTrend(player.marketValueHistory);
   const displayName = formatCardName(player.name, player.login);
-  const countryCode = player.nationalityIso2 ? player.nationalityIso2.toUpperCase() : "??";
 
   return new ImageResponse(
     (
@@ -114,20 +120,21 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 marginLeft: 16,
               }}
             >
-              #{rank}
+              {tier}
             </div>
           </div>
           {displayName !== `@${player.login}` && (
             <div style={{ display: "flex", fontSize: 24, color: C.green, marginTop: 8 }}>@{player.login}</div>
           )}
           <div style={{ display: "flex", alignItems: "center", marginTop: 14 }}>
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground }}>
-              {formatCompactNumber(player.trophies.followers)}
+            <LanguageBadge language={player.provider} size={30} />
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground, marginLeft: 10, textTransform: "uppercase" }}>
+              {player.provider}
             </div>
-            <div style={{ display: "flex", fontSize: 18, color: C.muted, marginLeft: 6 }}>followers</div>
             <div style={{ display: "flex", fontSize: 20, color: C.border, marginLeft: 16, marginRight: 16 }}>|</div>
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground }}>
-              {countryCode}·{abbreviatePosition(player.position.main)}
+            <FlagBadge iso2={player.nationalityIso2} size={26} />
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground, marginLeft: 10 }}>
+              {abbreviatePosition(player.position.main)}
             </div>
           </div>
         </div>
