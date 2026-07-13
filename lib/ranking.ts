@@ -1,4 +1,4 @@
-import referenceDataset from "./referenceDataset.json";
+import referenceDataset from "../data/legends.json";
 
 interface ReferenceEntry {
   login: string;
@@ -20,8 +20,8 @@ export interface RankingResult {
   percentile: number;
 }
 
-// Ranks the player's market value against the static reference dataset
-// (lib/referenceDataset.json — see scripts/generate-reference-dataset.ts).
+// Ranks the player's market value against the static legends dataset
+// (data/legends.json — see scripts/build-legends.ts).
 // `filterPosition`, if given, narrows the comparison set to players sharing
 // the same main position.
 export function rankAgainstReference(

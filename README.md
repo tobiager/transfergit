@@ -23,7 +23,7 @@ No manual inputs or edits: everything is read live from your public profile.
 ## Highlighted features
 
 - **Trophy Cabinet** (`lib/achievements.ts`, `components/TrophyCabinetGrid.tsx`): 14 rule-based achievements (Repositories, Impact, Career, Medical Record, Dev Culture), across squad/international/ballon-dor tiers. Locked ones show grayscale with a progress bar; ballon-dor tier trophies get a pulsing gold glow.
-- **Ranking** (`lib/ranking.ts`, `components/RankingCircles.tsx`): benchmarks your market value against a reference dataset of real GitHub profiles (regenerable with `scripts/generate-reference-dataset.ts`).
+- **Ranking** (`lib/ranking.ts`): benchmarks your market value against `data/legends.json`, a static snapshot of real GitHub profiles kept fresh by a daily GitHub Action (regenerable locally with `npm run build:legends`).
 - **Position in Detail** (`components/PositionPitch.tsx`, `PositionDetailCard.tsx`): a mini-pitch diagram placing your football position based on the dominant language/category.
 - **Light/dark theme toggle** via `next-themes` (`components/ThemeProvider.tsx`).
 

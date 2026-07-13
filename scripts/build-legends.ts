@@ -1,20 +1,22 @@
 // Regenerate the static "legends" dataset: ~50 well-known GitHub accounts,
 // pre-scored through the same buildPlayer() pipeline as any visited profile.
 // Powers the profile page's ranking circles, the landing ticker, and
-// /hall-of-fame.
+// /hall-of-fame. No database involved — this JSON file plus the daily
+// .github/workflows/update-legends.yml Action is the entire "backend".
 //
 // Usage (from the repo root, with a valid .env.local / GITHUB_TOKEN):
-//   node --env-file=.env.local -r ./scripts/stub-server-only.cjs --import tsx scripts/build-legends.ts
+//   npm run build:legends
 // (stub-server-only.cjs works around the "server-only" package, which
 // throws unconditionally outside a Next.js server bundle.)
 //
 // Rerun whenever the valuation/rating formulas change so the reference set
-// stays comparable to live profiles. Output: lib/referenceDataset.json.
-// `trend` is computed once here, at snapshot time, from that legend's own
-// valuation timeline — it's real data, just frozen until the next regen.
-// Some usernames may 404/timeout on a given run (huge profiles can trip
-// GitHub's GraphQL cost limits) — those are skipped with a warning, not
-// fatal.
+// stays comparable to live profiles. Output: data/legends.json. Usernames to
+// track live in data/legends-list.json — edit that file to add/remove
+// legends. `trend` is computed once here, at snapshot time, from that
+// legend's own valuation timeline — it's real data, just frozen until the
+// next regen. Some usernames may 404/timeout on a given run (huge profiles
+// can trip GitHub's GraphQL cost limits) — those are skipped with a
+// warning, not fatal.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -23,19 +25,7 @@ import { buildPlayer } from "../lib/player";
 import { computeMarketValueTrend } from "../lib/format";
 import { abbreviatePosition } from "../lib/positions";
 import { ACHIEVEMENTS, evaluateAchievements } from "../lib/achievements";
-
-const LEGEND_USERNAMES = [
-  "torvalds", "gaearon", "sindresorhus", "tj", "addyosmani", "kentcdodds",
-  "wesbos", "mdo", "defunkt", "mojombo", "yyx990803", "rich-harris",
-  "ryanflorence", "mjackson", "jaredpalmer", "developit", "acdlite",
-  "threepointone", "tannerlinsley", "paulirish", "jakearchibald",
-  "getify", "substack", "isaacs", "feross", "fabpot", "taylorotwell",
-  "egoist", "antfu", "swyx", "steveklabnik", "BurntSushi", "dtolnay",
-  "alexcrichton", "tomchristie", "dhh", "matz", "jeresig", "vjeux",
-  "gcanti", "sophiebits", "shadcn", "leerob", "rauchg",
-  "wycats", "jashkenas", "douglascrockford", "paulmillr", "ai",
-  "karpathy", "kripken", "sebmck", "kdy1", "evanw",
-] as const;
+import LEGEND_USERNAMES from "../data/legends-list.json";
 
 interface LegendEntry {
   login: string;
@@ -52,6 +42,7 @@ interface LegendEntry {
   followers: number;
   stars: number;
   commitsThisSeason: number;
+  generatedAt: string;
 }
 
 async function main() {
@@ -61,8 +52,9 @@ async function main() {
     ACHIEVEMENTS.map((a) => [a.id, 0])
   );
   let legendCount = 0;
+  const generatedAt = new Date().toISOString();
 
-  for (const username of LEGEND_USERNAMES) {
+  for (const username of LEGEND_USERNAMES as string[]) {
     if (seen.has(username.toLowerCase())) continue;
     seen.add(username.toLowerCase());
 
@@ -88,6 +80,7 @@ async function main() {
         followers: player.trophies.followers,
         stars: player.trophies.stars,
         commitsThisSeason: player.seasons[0]?.commits ?? 0,
+        generatedAt,
       });
       legendCount++;
       for (const result of evaluateAchievements(player)) {
@@ -101,7 +94,7 @@ async function main() {
 
   entries.sort((a, b) => b.marketValue - a.marketValue);
 
-  const outPath = path.join(process.cwd(), "lib", "referenceDataset.json");
+  const outPath = path.join(process.cwd(), "data", "legends.json");
   fs.writeFileSync(outPath, JSON.stringify(entries, null, 2) + "\n");
   console.log(`\nWrote ${entries.length} entries to ${outPath}`);
 

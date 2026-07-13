@@ -1,5 +1,5 @@
 import Link from "next/link";
-import referenceDataset from "@/lib/referenceDataset.json";
+import referenceDataset from "@/data/legends.json";
 import { TrendArrow } from "./TrendArrow";
 
 interface LegendEntry {
@@ -51,7 +51,7 @@ export function Ticker() {
         </div>
 
         <div className="hidden shrink-0 items-center gap-3 border-l border-border pl-4 font-mono text-xs text-muted lg:flex">
-          <span className="hidden xl:inline">{LEGENDS.length} legends scouted</span>
+          <span className="hidden xl:inline">{LEGENDS.length} legends tracked</span>
           <span className="hidden text-border xl:inline">·</span>
           <Link href="https://github.com/tobiager" target="_blank" rel="noreferrer" className="hover:text-foreground">
             Built by @tobiager

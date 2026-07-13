@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import referenceDataset from "@/lib/referenceDataset.json";
+import referenceDataset from "@/data/legends.json";
 import { Flag } from "@/components/Flag";
 import { TrendArrow } from "@/components/TrendArrow";
 import { Footer } from "@/components/Footer";
