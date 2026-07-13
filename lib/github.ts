@@ -4,6 +4,16 @@ import type { ContributionDay, GithubOrg, GithubProfile, GithubRepo, WorldCupRep
 const GITHUB_GRAPHQL_ENDPOINT = "https://api.github.com/graphql";
 
 class GithubUserNotFoundError extends Error {}
+export class GithubRateLimitError extends Error {}
+
+// GitHub usernames: alphanumeric + single hyphens, no leading/trailing
+// hyphen, max 39 chars. Rejecting anything else upfront keeps malformed
+// input out of API/OG-image URLs entirely.
+const USERNAME_RE = /^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}$/;
+
+export function isValidGithubUsername(username: string): boolean {
+  return USERNAME_RE.test(username);
+}
 
 async function githubGraphQL<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   const token = process.env.GITHUB_TOKEN;
@@ -20,9 +30,12 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query, variables }),
-    next: { revalidate: 3600 },
+    next: { revalidate: 86400 },
   });
 
+  if (res.status === 403 || res.status === 429) {
+    throw new GithubRateLimitError("GitHub API rate limit exceeded");
+  }
   if (!res.ok) {
     throw new Error(`GitHub GraphQL responded ${res.status}: ${await res.text()}`);
   }
@@ -157,7 +170,7 @@ export async function fetchOrgJoinYears(
             Authorization: `Bearer ${token}`,
             Accept: "application/vnd.github+json",
           },
-          next: { revalidate: 3600 },
+          next: { revalidate: 86400 },
         }
       );
       if (!res.ok) {
@@ -176,6 +189,8 @@ export async function fetchOrgJoinYears(
 }
 
 export async function fetchGithubProfile(login: string): Promise<GithubProfile | null> {
+  if (!isValidGithubUsername(login)) return null;
+
   try {
     const createdAtData = await githubGraphQL<CreatedAtResponse>(
       `query($login: String!) { user(login: $login) { createdAt } }`,

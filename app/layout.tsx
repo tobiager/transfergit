@@ -33,9 +33,22 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: "Transfergit — Your GitHub, valued like a football player",
+  title: "TransferGit — The Developer Transfer Market | Get Scouted",
   description:
-    "Turn any GitHub profile into a Transfermarkt-style player card: market value, position, seasons, transfers and injuries.",
+    "Turn any GitHub profile into a Transfermarkt-style player card. Measure your market value based on your code, commits, stars and followers — then get scouted.",
+  keywords: [
+    "github",
+    "developers",
+    "software engineering",
+    "transfer market",
+    "developer stats",
+    "coding",
+  ],
+  icons: {
+    icon: "/transfergit/tg.ico",
+    shortcut: "/transfergit/tg.ico",
+    apple: "/transfergit/tg.png",
+  },
 };
 
 export default function RootLayout({

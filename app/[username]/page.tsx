@@ -20,7 +20,7 @@ import { StatCards, type StatCardData } from "@/components/StatCards";
 import { Footer } from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 interface PageProps {
   params: Promise<{ username: string }>;
