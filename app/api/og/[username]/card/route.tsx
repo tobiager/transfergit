@@ -11,8 +11,6 @@ import { abbreviatePosition } from "@/lib/positions";
 import { LanguageBadge } from "../../_shared/languageIcon";
 import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 
-export const runtime = "edge";
-
 // 1200x1200 (1:1): the minimal "player card" — dense top-to-bottom like the
 // reference (avatar, name, identity divider, 3-stat grid), sized to the
 // content instead of a tall canvas with a flex spacer soaking up dead space.

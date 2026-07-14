@@ -12,8 +12,6 @@ import { evaluateAchievements, topTrophies } from "@/lib/achievements";
 import { LanguageBadge } from "../../_shared/languageIcon";
 import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 
-export const runtime = "edge";
-
 // 1080x1920 (9:16): the same minimal card anatomy as the 3:4, just more
 // vertical air and the value made the hero — the "story" format for
 // phone-screen shares.

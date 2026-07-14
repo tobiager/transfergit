@@ -11,8 +11,6 @@ import { abbreviatePosition } from "@/lib/positions";
 import { LanguageBadge } from "../../_shared/languageIcon";
 import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 
-export const runtime = "edge";
-
 // 900x1200 (3:4): the same identity + 3-stat-grid anatomy as the 1:1 card,
 // just narrower and taller — for slots that want a classic portrait crop.
 const WIDTH = 900;

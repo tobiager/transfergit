@@ -11,8 +11,6 @@ import { abbreviatePosition } from "@/lib/positions";
 import { LanguageBadge } from "../../_shared/languageIcon";
 import { FlagBadge } from "../../_shared/flagIcon";
 
-export const runtime = "edge";
-
 // 1200x630 (16:9): the "banner" format — photo left, name + stats center,
 // value right — and the only variant wired into OG/Twitter meta tags
 // (social platforms crop vertical images badly).

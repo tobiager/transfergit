@@ -1,37 +1,25 @@
-// Satori can't load Google Fonts via @import/CSS: it needs the raw font
-// buffer. The .ttf files live in /assets/fonts.
-//
-// Important: each `new URL(literal, import.meta.url)` must use a LITERAL
-// string (not a variable) so webpack detects it at build time and bundles
-// it as a servable asset. If the path comes from a parameter, it becomes a
-// fetch to a file:// URL at runtime, which the edge runtime doesn't support
-// ("not implemented... yet..."). That's why there's no generic
-// loadFont(path) helper here: each fetch is inline with its literal.
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
+// These routes run on the Node.js runtime (Edge's 1 MB Vercel function limit
+// is too small once 5 font files are bundled). Node reads the .ttf files
+// straight off disk instead of the Edge-only `fetch(new URL(...))` trick.
 export interface OgFont {
   name: string;
-  data: ArrayBuffer;
+  data: Buffer;
   weight: 400 | 500 | 600 | 700;
   style: "normal";
 }
 
 export async function loadOgFonts(): Promise<OgFont[]> {
+  const fontsDir = join(process.cwd(), "assets", "fonts");
   const [archivoRegular, archivoSemiBold, archivoBold, archivoBlack, barlowCondensedSemiBold] =
     await Promise.all([
-      fetch(new URL("../../../../assets/fonts/Archivo-Regular.ttf", import.meta.url)).then((r) =>
-        r.arrayBuffer()
-      ),
-      fetch(new URL("../../../../assets/fonts/Archivo-SemiBold.ttf", import.meta.url)).then((r) =>
-        r.arrayBuffer()
-      ),
-      fetch(new URL("../../../../assets/fonts/Archivo-Bold.ttf", import.meta.url)).then((r) =>
-        r.arrayBuffer()
-      ),
-      fetch(new URL("../../../../assets/fonts/ArchivoBlack-Regular.ttf", import.meta.url)).then((r) =>
-        r.arrayBuffer()
-      ),
-      fetch(new URL("../../../../assets/fonts/BarlowCondensed-SemiBold.ttf", import.meta.url)).then(
-        (r) => r.arrayBuffer()
-      ),
+      readFile(join(fontsDir, "Archivo-Regular.ttf")),
+      readFile(join(fontsDir, "Archivo-SemiBold.ttf")),
+      readFile(join(fontsDir, "Archivo-Bold.ttf")),
+      readFile(join(fontsDir, "ArchivoBlack-Regular.ttf")),
+      readFile(join(fontsDir, "BarlowCondensed-SemiBold.ttf")),
     ]);
 
   return [
