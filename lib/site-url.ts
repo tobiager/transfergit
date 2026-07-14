@@ -1,18 +1,13 @@
-// Single source of truth for the site's public URL. No domain is
-// hardcoded anywhere else in the app — the production domain doesn't
-// exist yet, so everything resolves through this helper instead:
-//   1. NEXT_PUBLIC_SITE_URL (set manually once a domain is bought)
-//   2. VERCEL_PROJECT_PRODUCTION_URL (Vercel sets this automatically)
-//   3. http://localhost:{PORT} in dev
+// Single source of truth for the site's public URL. Exports and shares
+// must always point at the real domain — even from a Vercel preview
+// deploy — so production always resolves to transfergit.com regardless
+// of env vars. Only local dev falls back to localhost.
 export function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+  if (process.env.NODE_ENV !== "production") {
+    const port = process.env.PORT ?? "3000";
+    return `http://localhost:${port}`;
   }
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  }
-  const port = process.env.PORT ?? "3000";
-  return `http://localhost:${port}`;
+  return "https://transfergit.com";
 }
 
 // Same, without the protocol — for the "{host}/{username}" label shown

@@ -1,13 +1,10 @@
 @import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
 
 /* Floodlight identity: deep navy-green with a neon-green accent + glow
-   (design/floodlight-reference.html). Dark is canonical; light is re-derived
-   from the same primitives, not hand-tuned separately. next-themes toggles
-   the .dark/.light class on <html>. OG cards never read these — they hardcode
-   the dark palette in app/api/og/_shared/theme.ts (Satori can't read CSS vars). */
-:root,
-.dark {
+   (design/floodlight-reference.html). Dark mode only, permanently — no
+   light theme, no toggle. OG cards never read these — they hardcode the
+   same dark palette in app/api/og/_shared/theme.ts (Satori can't read CSS vars). */
+:root {
   --pitch: #060a12;
   --pitch-elevated: #0d1420;
   --surface: #0b111c;
@@ -29,30 +26,6 @@
   --glass-bg-solid: rgba(11, 17, 28, 0.92);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-highlight: rgba(255, 255, 255, 0.04);
-}
-
-.light {
-  --pitch: #f2f2f2;
-  --pitch-elevated: #ffffff;
-  --surface: #ffffff;
-  --surface-elevated: #f7f7f8;
-  --border: #e5e5e5;
-  --foreground: #17202e;
-  --muted: #5b6472;
-  --tm-blue-deep: #1a3151;
-  --tm-blue: #1d75a3;
-  --tm-blue-bright: #0e5c8a;
-  --value-green: #0a7a45;
-  --value-green-rgb: 10, 122, 69;
-  --value-red: #c81e2c;
-  --gold: #9c6f00;
-  --card-border: #e5e5e5;
-  --card-inset-highlight: rgba(0, 0, 0, 0.02);
-  --grid-line: rgba(0, 0, 0, 0.05);
-  --glass-bg: rgba(255, 255, 255, 0.65);
-  --glass-bg-solid: rgba(255, 255, 255, 0.92);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.6);
 }
 
 @theme inline {
@@ -113,17 +86,8 @@ body::before {
   -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 40%, transparent 40%, black 95%);
 }
 
-.light body,
-.light {
-  color-scheme: light;
-}
-
-.dark {
+:root {
   color-scheme: dark;
-}
-
-.light body {
-  background-image: radial-gradient(ellipse 60% 50% at 50% -10%, var(--pitch-elevated), transparent);
 }
 
 .font-display {
@@ -180,13 +144,6 @@ body,
     0 1px 0 var(--glass-highlight) inset,
     0 2px 6px rgba(0, 0, 0, 0.5),
     0 18px 36px -16px rgba(0, 0, 0, 0.65);
-}
-
-.light .tm-card {
-  box-shadow:
-    0 1px 0 var(--glass-highlight) inset,
-    0 1px 3px rgba(16, 24, 40, 0.08),
-    0 4px 12px rgba(16, 24, 40, 0.06);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

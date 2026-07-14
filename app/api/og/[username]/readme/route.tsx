@@ -266,17 +266,29 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
                 key={rating.key}
                 style={{
                   display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  flexDirection: "column",
                   width: "50%",
                   paddingRight: 20,
-                  marginBottom: 16,
+                  marginBottom: 18,
                 }}
               >
-                <div style={{ display: "flex", fontSize: 16, color: C.foreground }}>{rating.label}</div>
-                <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 18, color: C.green }}>
-                  {rating.score}
+                <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", fontSize: 16, color: C.foreground }}>{rating.label}</div>
+                  <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 18, color: C.green }}>
+                    {rating.score}
+                  </div>
+                </div>
+                <div style={{ display: "flex", width: "100%", height: 8, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.08)" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      width: `${Math.min(99, rating.score)}%`,
+                      height: 8,
+                      borderRadius: 999,
+                      backgroundColor: C.green,
+                      boxShadow: "0 0 10px rgba(0,230,118,0.6)",
+                    }}
+                  />
                 </div>
               </div>
             ))}

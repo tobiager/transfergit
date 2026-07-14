@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, Copy, Download, Link2, Share2, X as XIcon } from "lucide-react";
 import { TiltCard } from "./TiltCard";
 
 type Variant = "readme" | "card" | "portrait" | "story" | "social";
@@ -16,6 +17,8 @@ const VARIANT_META: Record<Variant, { path: string; width: number; height: numbe
 export function ExportPanel({ login, marketValueFormatted }: { login: string; marketValueFormatted: string }) {
   const [variant, setVariant] = useState<Variant>("readme");
   const [toast, setToast] = useState<string | null>(null);
+  const [copiedAction, setCopiedAction] = useState<"link" | "markdown" | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const [loaded, setLoaded] = useState<Record<Variant, boolean>>({
     readme: false,
     card: false,
@@ -48,10 +51,12 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   }
 
   async function copyMarkdown() {
-    const markdown = `[![${login} — Transfergit](${origin}${imagePath("readme")})](${profileUrl()})`;
+    const markdown = `[![TransferGit Card](${origin}${imagePath("readme")})](${profileUrl()})`;
     try {
       await navigator.clipboard.writeText(markdown);
+      setCopiedAction("markdown");
       showToast("Copied! Paste it in your README");
+      setTimeout(() => setCopiedAction((a) => (a === "markdown" ? null : a)), 2000);
     } catch {
       showToast("Couldn't copy — select and copy manually");
     }
@@ -60,16 +65,26 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   async function copyShareLink() {
     try {
       await navigator.clipboard.writeText(profileUrl());
+      setCopiedAction("link");
       showToast("Link copied!");
+      setTimeout(() => setCopiedAction((a) => (a === "link" ? null : a)), 2000);
     } catch {
       showToast("Couldn't copy — select and copy manually");
     }
   }
 
+  function shareText(): string {
+    return `My market value as a developer is ${marketValueFormatted}. Think you can beat it? Calculate yours on TransferGit ⚽`;
+  }
+
   function shareToX() {
-    const text = `My market value as a developer is ${marketValueFormatted} ⚽ Get scouted → ${profileUrl()}`;
-    const params = new URLSearchParams({ text });
+    const params = new URLSearchParams({ text: shareText(), url: profileUrl() });
     window.open(`https://twitter.com/intent/tweet?${params}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareToLinkedIn() {
+    const params = new URLSearchParams({ url: profileUrl() });
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?${params}`, "_blank", "noopener,noreferrer");
   }
 
   function downloadPng() {
@@ -140,40 +155,87 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={copyShareLink}
+              className="flex items-center justify-center gap-2 rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
+            >
+              {copiedAction === "link" ? <Check size={16} className="text-value-green" /> : <Link2 size={16} />}
+              {copiedAction === "link" ? "Copied!" : "Copy Link"}
+            </button>
             <button
               type="button"
               onClick={copyMarkdown}
-              className="rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium hover:bg-border/40"
+              className="flex items-center justify-center gap-2 rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
             >
-              Copy Markdown
+              {copiedAction === "markdown" ? <Check size={16} className="text-value-green" /> : <Copy size={16} />}
+              {copiedAction === "markdown" ? "Copied!" : "Copy README Markdown"}
             </button>
             <button
               type="button"
               onClick={downloadPng}
-              className="glow-green rounded-md bg-value-green px-4 py-2.5 font-display text-sm text-pitch transition hover:brightness-110"
+              className="glow-green flex items-center justify-center gap-2 rounded-md bg-value-green px-4 py-2.5 font-display text-sm text-pitch transition hover:brightness-110"
             >
-              ↓ Download PNG
+              <Download size={16} />
+              Download PNG
             </button>
             <button
               type="button"
-              onClick={copyShareLink}
-              className="rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium hover:bg-border/40"
+              onClick={() => setShareOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
             >
-              Copy share link
-            </button>
-            <button
-              type="button"
-              onClick={shareToX}
-              className="rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium hover:bg-border/40"
-            >
-              Share on X
+              <Share2 size={16} />
+              Share on Socials
             </button>
           </div>
 
           <p className="mt-4 font-mono text-xs text-muted">{host()}/{login}</p>
         </div>
       </div>
+
+      {shareOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="animate-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setShareOpen(false)}
+        >
+          <div
+            className="animate-modal-panel w-full max-w-sm rounded-xl border border-border bg-surface-elevated p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg uppercase">Share your value</h3>
+              <button
+                type="button"
+                onClick={() => setShareOpen(false)}
+                aria-label="Close"
+                className="text-muted transition hover:text-foreground"
+              >
+                <XIcon size={18} />
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-muted">Challenge your network to beat your market value.</p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={shareToX}
+                className="rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
+              >
+                Share on X
+              </button>
+              <button
+                type="button"
+                onClick={shareToLinkedIn}
+                className="rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
+              >
+                Share on LinkedIn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

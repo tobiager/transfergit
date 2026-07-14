@@ -1,109 +1,110 @@
-# Transfergit ⚽
+<div align="center">
+
+# ● TRANSFERGIT
 
 **Your GitHub, valued like a football player.**
+Market value, transfer history, injuries — the whole file.
 
-Turn any GitHub profile into a Transfermarkt-style player card — with a night-broadcast sports aesthetic: Transfermarkt's editorial seriousness with Champions League production value. Market value calculated from your real activity (commits, stars, pull requests, followers), transfer history, injuries (commit-free streaks), season-by-season stats, and scouting metrics.
+[![Get your card](https://transfergit.com/api/og/tobiager/readme)](https://transfergit.com/tobiager)
 
-Try it with [`/torvalds`](https://transfergit.com/torvalds), [`/gaearon`](https://transfergit.com/gaearon), or your own username.
+[![GitHub stars](https://img.shields.io/github/stars/tobiager/transfergit?style=flat-square&color=00c853)](https://github.com/tobiager/transfergit/stargazers)
+[![License: MIT](https://img.shields.io/badge/license-MIT-1a3151?style=flat-square)](LICENSE)
+[![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-Vercel-black?style=flat-square&logo=vercel)](https://transfergit.com)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ffc400?style=flat-square)](#contributing--roadmap)
 
-## How it works
+### **[⚽ Get your card →](https://transfergit.com)**
 
-1. Enter a GitHub username.
-2. `lib/github.ts` fetches your full public profile via the GitHub GraphQL API (contributions per year, repos, orgs, activity calendar).
-3. `lib/player.ts` and the rest of `lib/` translate that data into football terms:
-   - **Market value** (`lib/valuation.ts`): a formula based on commits, stars, followers, pull requests, and repos with traction, with multipliers for account age and recent form.
-   - **Position** (`lib/positions.ts`): based on the dominant language/category across your repos (frontend → Right Winger, backend → Midfielder, devops → Goalkeeper, etc.).
-   - **Injuries** (`lib/injuries.ts`): activity-free streaks over the last year.
-   - **Transfers**: dominant-language changes season to season + organization joins.
-   - **Scouting metrics**: commits, stars, PRs, code reviews, and activity streak, normalized to a 0-99 scale.
-4. Everything renders on a Transfermarkt-style card, exportable as an image for READMEs or social media.
-
-No manual inputs or edits: everything is read live from your public profile.
-
-## Highlighted features
-
-- **Trophy Cabinet** (`lib/achievements.ts`, `components/TrophyCabinetGrid.tsx`): 14 rule-based achievements (Repositories, Impact, Career, Medical Record, Dev Culture), across squad/international/ballon-dor tiers. Locked ones show grayscale with a progress bar; ballon-dor tier trophies get a pulsing gold glow.
-- **Ranking** (`lib/ranking.ts`): benchmarks your market value against `data/legends.json`, a static snapshot of real GitHub profiles kept fresh by a daily GitHub Action (regenerable locally with `npm run build:legends`).
-- **Position in Detail** (`components/PositionPitch.tsx`, `PositionDetailCard.tsx`): a mini-pitch diagram placing your football position based on the dominant language/category.
-- **Light/dark theme toggle** via `next-themes` (`components/ThemeProvider.tsx`).
-
-## Stack
-
-- **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- **Tailwind CSS v4** (design tokens via `@theme inline` in `app/globals.css`, no `tailwind.config`)
-- **GSAP** for entrance animations (profile and landing reveal)
-- **Recharts** for the market value evolution chart
-- **next-themes** for the light/dark theme toggle
-- **next/og** (`ImageResponse`, Satori) for the image export endpoints — run on Edge Runtime
-- Fonts: **Archivo Black** / **Archivo** / **Barlow Condensed**, loaded with `next/font/google` on the web and as raw `.ttf` buffers (`assets/fonts/`) for Satori
-
-## Design system
-
-Background with depth (never flat): radial gradient + SVG noise texture (`feTurbulence`) + a subtle pitch pattern on the landing's edges.
-
-| Token | Use |
-|---|---|
-| `--pitch` `#0a0e1a` → `--pitch-elevated` `#141b2e` | Base background |
-| `--tm-blue-deep` `#1a3151` (Transfermarkt navy) | Section and table headers |
-| `--value-green` `#00c853` | **Exclusive** to market value, trend arrows, and primary CTAs |
-| `--gold` `#ffc400` | Record markers and special highlights |
-
-Cards with a 6% white border, double shadow (ambient + contact) — `.tm-card` utility class in `globals.css`. Subtle 3D tilt on hover for the main card (`components/TiltCard.tsx`).
-
-## Animations (GSAP)
-
-- **`components/ProfileReveal.tsx`**: orchestrates the profile's entrance — main card → sidebar in stagger → chart → scouting bars growing from 0 → season table. Also migrates the market value count-up from `requestAnimationFrame` to GSAP.
-- **`components/LandingReveal.tsx`**: headline reveal via `clip-path` line by line, subtitle/input with fade+rise, card fan entering with stagger and rotation, generated-cards counter.
-- Everything respects `prefers-reduced-motion`: if enabled, the final state is applied instantly, with no animation.
-
-## Export your card
-
-From `/[username]` there's an export panel (`components/ExportPanel.tsx`) with:
-
-- **Live preview** of two variants — *Full card* (1200×630, for OG/README) and *Compact* (900×1200, vertical collectible card).
-- **Copy Markdown**: copies an embedded image linking to your card — paste it into your GitHub README.
-- **Download PNG** of the selected variant.
-- **Share on X / LinkedIn**.
-
-The endpoints (`app/api/og/[username]/route.tsx` and `.../card/route.tsx`) generate the images on Edge Runtime with `next/og`, share the same color/typography tokens as the web, and cache with `s-maxage=86400, stale-while-revalidate`.
-
-## Getting started
-
-```bash
-npm install
-cp .env.example .env.local   # fill in GITHUB_TOKEN with a Personal Access Token (no special scopes, public read-only)
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Environment variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `GITHUB_TOKEN` | Yes | GitHub Personal Access Token, only used to read public profiles via GraphQL |
-| `NEXT_PUBLIC_SITE_URL` | No | Public site URL, used in OG tags and export panel links. Falls back to `VERCEL_URL` or `http://localhost:3000` if unset |
-
-## Project structure
-
-```
-app/
-  page.tsx                 # Landing
-  [username]/page.tsx      # Player card
-  api/og/[username]/       # Image export endpoints (next/og)
-components/                # Card, landing, and export panel UI
-lib/                       # Data fetching (GitHub GraphQL) and football-terms translation logic
-assets/fonts/              # .ttf files used by Satori (can't be loaded via CSS)
-public/fan-cards/          # Pre-rendered cards of well-known devs for the landing fan
-```
-
-## Build
-
-```bash
-npm run build
-npm run start
-```
+</div>
 
 ---
 
-Made by [@tobiager](https://github.com/tobiager).
+## Get yours in 10 seconds
+
+1. Go to **[transfergit.com](https://transfergit.com)** and type your username.
+2. Hit **Copy Markdown** and paste it into your GitHub profile README.
+
+```md
+[![Transfergit card](https://transfergit.com/api/og/YOUR_USERNAME/readme)](https://transfergit.com/YOUR_USERNAME)
+```
+
+That's it. Your README now has a transfer fee.
+
+## What you get
+
+- 💰 **Market value in euros** — real formula, deliberately absurd inputs
+- 🔁 **Transfer history** — pulled from the orgs you've actually joined
+- 🩹 **Injury history** — burnout streaks detected from your commit calendar
+- 🏆 **Trophy cabinet** — 14 achievements across squad / international / Ballon d'Or tiers
+- 🔍 **Scouting metrics** — commits, stars, PRs, reviews, streaks, normalized 0-99
+- 📅 **Season-by-season stats** — one row per year you've shown up
+- 📈 **Rank vs. legends** — percentile tier from PROSPECT to TOP 0.1%
+- 🌟 **Hall of Fame** — see where you land next to torvalds, gaearon, and co.
+- 🖼️ **4 export formats** — README · Full, Player card (3:4), Story (9:16), Banner (16:9)
+
+![Transfergit full profile](docs/screenshots/profile.png)
+
+## How the market value works
+
+```
+value = 50,000
+      + commits        × €800
+      + stars          × €4,000
+      + followers      × €6,000
+      + pull requests  × €2,500
+      + repos >10★     × €25,000
+
+× form multiplier   (up to +50%, based on last 12 months' commits)
+× age multiplier    (0.8× under 2 years, 1.1× over 6 — young prospect vs. veteran)
+```
+
+| ⚽ Football | 🐙 GitHub |
+|---|---|
+| Goals | Commits |
+| Assists | Pull requests |
+| Yellow cards | Issues opened |
+| Caps / appearances | Repos with traction |
+| Transfer fee | Market value |
+| Injury | 14+ day commit-free streak |
+| Preferred foot | Typed language (right) vs. dynamic (left) |
+| Position | Dominant language category |
+
+Is it scientific? No. Is your value higher than Messi's? Probably. ⚽
+
+## Stack & self-hosting
+
+**Next.js 15 · TypeScript · Tailwind v4 · GSAP + Lenis · @vercel/og · GitHub GraphQL API**
+
+```bash
+git clone https://github.com/tobiager/transfergit.git
+cd transfergit
+cp .env.example .env.local   # fill in GITHUB_TOKEN (read-only PAT, no special scopes)
+npm i && npm run dev
+```
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tobiager/transfergit)
+
+The **legends dataset** (`data/legends.json`) is a snapshot of real profiles used for percentile ranking. A daily GitHub Action (`.github/workflows/update-legends.yml`) re-fetches everyone in `data/legends-list.json` and commits the fresh snapshot — so your rank moves as legends' stats move, without anyone touching the site.
+
+## Contributing + roadmap
+
+Want a legend added to the ranking? Add their username to [`data/legends-list.json`](data/legends-list.json) and open a PR — the daily Action does the rest. Easiest way to get a merged PR here.
+
+Roadmap:
+
+- [ ] Versus mode — head-to-head card comparison
+- [ ] Tournament mode — 4 / 8 / 16 / 32 player brackets
+- [ ] Global leaderboard
+- [ ] Transfer rumors generator
+- [ ] Org / team cards
+
+Looking for a place to start? Check issues labeled **[`good first issue`](https://github.com/tobiager/transfergit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)**.
+
+---
+
+<div align="center">
+
+Built by [@tobiager](https://github.com/tobiager) in Argentina 🇦🇷 during the 2026 World Cup
+
+*Transfergit is a parody project, not affiliated with or endorsed by Transfermarkt GmbH & Co. KG. All GitHub data is public; nothing is stored beyond a cached snapshot. No sign-up, no tracking.*
+
+</div>

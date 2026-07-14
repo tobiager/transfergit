@@ -8,6 +8,7 @@ export function SearchInput({
   placeholder = "github-username",
   autoFocus = false,
   reveal = true,
+  ctaLabel = "SCOUT →",
 }: {
   compact?: boolean;
   placeholder?: string;
@@ -19,6 +20,7 @@ export function SearchInput({
   // point can end up past the page's actual scrollable range and the
   // input never fades in at all.
   reveal?: boolean;
+  ctaLabel?: string;
 }) {
   const [value, setValue] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -63,8 +65,12 @@ export function SearchInput({
   }
 
   return (
-    <form {...(reveal ? { "data-reveal": "input" } : {})} onSubmit={handleSubmit} className="flex w-full max-w-lg gap-2">
-      <div className="relative flex-1">
+    <form
+      {...(reveal ? { "data-reveal": "input" } : {})}
+      onSubmit={handleSubmit}
+      className="flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:items-center sm:gap-2"
+    >
+      <div className="relative w-full flex-1">
         <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 font-mono text-lg text-value-green">
           @
         </span>
@@ -74,15 +80,15 @@ export function SearchInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full rounded-md border border-border bg-surface py-4 pl-9 pr-5 font-mono text-lg text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-value-green"
+          className="w-full rounded-md border border-border bg-surface py-3.5 pl-9 pr-5 font-mono text-lg text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-value-green sm:py-4"
         />
       </div>
       <button
         type="submit"
         disabled={isPending}
-        className="glow-green rounded-md bg-value-green px-6 py-4 font-display text-lg text-pitch transition hover:brightness-110 disabled:opacity-60"
+        className="glow-green flex w-full items-center justify-center rounded-md bg-value-green px-6 py-3.5 font-display text-lg text-pitch transition hover:brightness-110 disabled:opacity-60 sm:w-auto sm:py-4"
       >
-        {isPending ? "..." : "SCOUT →"}
+        {isPending ? "..." : ctaLabel}
       </button>
     </form>
   );

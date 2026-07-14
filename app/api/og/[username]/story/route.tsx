@@ -8,6 +8,7 @@ import { getSiteHost } from "@/lib/site-url";
 import { percentileTier } from "@/lib/ranking";
 import { computeMarketValueTrend } from "@/lib/format";
 import { abbreviatePosition } from "@/lib/positions";
+import { evaluateAchievements, topTrophies } from "@/lib/achievements";
 import { LanguageBadge } from "../../_shared/languageIcon";
 import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 
@@ -70,6 +71,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
   const trend = computeMarketValueTrend(player.marketValueHistory);
   const displayName = formatCardName(player.name, player.login);
   const hasFlag = Boolean(flagUrl(player.nationalityIso2));
+  const top3 = topTrophies(evaluateAchievements(player), 3);
 
   return new ImageResponse(
     (
@@ -80,6 +82,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "space-between",
           backgroundColor: C.pitch,
           backgroundImage: "radial-gradient(circle at 50% -10%, rgba(0,230,118,0.14), transparent 55%)",
           padding: 96,
@@ -118,64 +121,87 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           </div>
         </div>
 
-        <div style={{ display: "flex", flex: 1 }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
+          <img
+            src={player.avatarUrl}
+            alt=""
+            width={440}
+            height={440}
+            style={{ borderRadius: 40, borderWidth: 3, borderStyle: "solid", borderColor: C.border }}
+          />
 
-        {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
-        <img
-          src={player.avatarUrl}
-          alt=""
-          width={440}
-          height={440}
-          style={{ borderRadius: 40, borderWidth: 3, borderStyle: "solid", borderColor: C.border }}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            fontFamily: "Archivo Black",
-            fontSize: 72,
-            color: C.foreground,
-            marginTop: 48,
-            textAlign: "center",
-            textTransform: "uppercase",
-          }}
-        >
-          {displayName}
-        </div>
-        {displayName !== `@${player.login}` && (
-          <div style={{ display: "flex", fontSize: 32, color: C.green, marginTop: 12 }}>@{player.login}</div>
-        )}
-
-        <div style={{ display: "flex", flex: 1 }} />
-
-        <div
-          style={{
-            display: "flex",
-            fontFamily: "Archivo Black",
-            fontSize: 120,
-            color: C.green,
-            textAlign: "center",
-          }}
-        >
-          {player.marketValueFormatted}
-        </div>
-        {trend && trend.direction !== "flat" && (
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              fontSize: 34,
-              fontWeight: 700,
-              marginTop: 8,
-              color: trend.direction === "up" ? C.green : C.red,
+              fontFamily: "Archivo Black",
+              fontSize: 72,
+              color: C.foreground,
+              marginTop: 48,
+              textAlign: "center",
+              textTransform: "uppercase",
             }}
           >
-            <OgTrendArrow direction={trend.direction} size={26} color={trend.direction === "up" ? C.green : C.red} />
-            <div style={{ display: "flex", marginLeft: 8 }}>{Math.abs(trend.pct).toFixed(1)}%</div>
+            {displayName}
           </div>
-        )}
+          {displayName !== `@${player.login}` && (
+            <div style={{ display: "flex", fontSize: 32, color: C.green, marginTop: 12 }}>@{player.login}</div>
+          )}
+        </div>
 
-        <div style={{ display: "flex", flex: 1 }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Archivo Black",
+              fontSize: 132,
+              color: C.green,
+              textAlign: "center",
+            }}
+          >
+            {player.marketValueFormatted}
+          </div>
+          {trend && trend.direction !== "flat" && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontSize: 34,
+                fontWeight: 700,
+                marginTop: 8,
+                color: trend.direction === "up" ? C.green : C.red,
+              }}
+            >
+              <OgTrendArrow direction={trend.direction} size={26} color={trend.direction === "up" ? C.green : C.red} />
+              <div style={{ display: "flex", marginLeft: 8 }}>{Math.abs(trend.pct).toFixed(1)}%</div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "row", gap: 12 }}>
+          {top3.length === 0 ? (
+            <div style={{ display: "flex", fontSize: 20, color: C.muted }}>No honours yet</div>
+          ) : (
+            top3.map((r) => (
+              <div
+                key={r.achievement.id}
+                style={{
+                  display: "flex",
+                  fontSize: 20,
+                  color: C.gold,
+                  borderWidth: 1,
+                  borderStyle: "solid",
+                  borderColor: "rgba(255,196,0,0.35)",
+                  backgroundColor: "rgba(255,196,0,0.06)",
+                  borderRadius: 10,
+                  padding: "10px 20px",
+                }}
+              >
+                {r.achievement.name}
+              </div>
+            ))
+          )}
+        </div>
 
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: "100%", justifyContent: "space-around" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>

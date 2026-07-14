@@ -79,6 +79,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "space-between",
           backgroundColor: C.pitch,
           backgroundImage: "radial-gradient(circle at 50% -10%, rgba(0,230,118,0.12), transparent 55%)",
           padding: 48,
@@ -123,102 +124,105 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           </div>
         </div>
 
-        {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
-        <img
-          src={player.avatarUrl}
-          alt=""
-          width={620}
-          height={620}
-          style={{
-            marginTop: 36,
-            borderRadius: 40,
-            borderWidth: 3,
-            borderStyle: "solid",
-            borderColor: C.green,
-            boxShadow: "0 0 44px rgba(0,230,118,0.35)",
-          }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
+          <img
+            src={player.avatarUrl}
+            alt=""
+            width={496}
+            height={496}
+            style={{
+              borderRadius: 36,
+              borderWidth: 3,
+              borderStyle: "solid",
+              borderColor: C.green,
+              boxShadow: "0 0 44px rgba(0,230,118,0.35)",
+            }}
+          />
 
-        <div
-          style={{
-            display: "flex",
-            fontFamily: "Archivo Black",
-            fontSize: 46,
-            color: C.foreground,
-            marginTop: 28,
-            textAlign: "center",
-            textTransform: "uppercase",
-            letterSpacing: 1,
-          }}
-        >
-          {displayName}
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Archivo Black",
+              fontSize: 50,
+              color: C.foreground,
+              marginTop: 36,
+              textAlign: "center",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            {displayName}
+          </div>
+          {displayName !== `@${player.login}` && (
+            <div style={{ display: "flex", fontSize: 26, color: C.green, marginTop: 10 }}>@{player.login}</div>
+          )}
         </div>
-        {displayName !== `@${player.login}` && (
-          <div style={{ display: "flex", fontSize: 24, color: C.green, marginTop: 8 }}>@{player.login}</div>
-        )}
 
-        <div style={{ display: "flex", width: "100%", height: 1, backgroundColor: C.border, marginTop: 24 }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+          <div style={{ display: "flex", width: "100%", height: 1, backgroundColor: C.border }} />
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            width: "100%",
-            justifyContent: "space-around",
-            marginTop: 28,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <LanguageBadge language={player.provider} size={52} />
-            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 18, color: C.foreground, marginTop: 8, textTransform: "uppercase" }}>
-              {player.provider}
-            </div>
-            <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
-              Stack
-            </div>
-          </div>
-
-          <Divider />
-
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <FlagBadge iso2={player.nationalityIso2} size={32} />
-            <div
-              style={{
-                display: "flex",
-                fontFamily: "Archivo Black",
-                fontSize: 36,
-                color: C.foreground,
-                marginTop: hasFlag ? 8 : 0,
-              }}
-            >
-              {abbreviatePosition(player.position.main)}
-            </div>
-            <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
-              Position
-            </div>
-          </div>
-
-          <Divider />
-
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-              <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.green }}>
-                {player.marketValueFormatted}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              width: "100%",
+              justifyContent: "space-around",
+              marginTop: 36,
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <LanguageBadge language={player.provider} size={52} />
+              <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 18, color: C.foreground, marginTop: 8, textTransform: "uppercase" }}>
+                {player.provider}
               </div>
-              {trend && trend.direction !== "flat" && (
-                <div style={{ display: "flex", marginLeft: 6 }}>
-                  <OgTrendArrow direction={trend.direction} size={20} color={trend.direction === "up" ? C.green : C.red} />
-                </div>
-              )}
+              <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+                Stack
+              </div>
             </div>
-            <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
-              Value
+
+            <Divider />
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <FlagBadge iso2={player.nationalityIso2} size={32} />
+              <div
+                style={{
+                  display: "flex",
+                  fontFamily: "Archivo Black",
+                  fontSize: 36,
+                  color: C.foreground,
+                  marginTop: hasFlag ? 8 : 0,
+                }}
+              >
+                {abbreviatePosition(player.position.main)}
+              </div>
+              <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+                Position
+              </div>
+            </div>
+
+            <Divider />
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 38, color: C.green }}>
+                  {player.marketValueFormatted}
+                </div>
+                {trend && trend.direction !== "flat" && (
+                  <div style={{ display: "flex", marginLeft: 6 }}>
+                    <OgTrendArrow direction={trend.direction} size={20} color={trend.direction === "up" ? C.green : C.red} />
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", fontSize: 13, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>
+                Value
+              </div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", fontSize: 18, color: C.muted, marginTop: 44 }}>
+        <div style={{ display: "flex", fontSize: 18, color: C.muted }}>
           {siteHost}/{player.login}
         </div>
       </div>

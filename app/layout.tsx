@@ -4,7 +4,6 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { ValuationModal } from "@/components/ValuationModal";
 import { ValuationModalProvider } from "@/components/ValuationModalContext";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { getSiteUrl } from "@/lib/site-url";
 
 const display = Archivo_Black({
@@ -59,17 +58,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${table.variable} ${body.variable} ${mono.variable} h-full antialiased`}
-      suppressHydrationWarning
+      className={`dark ${display.variable} ${table.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-dvh flex flex-col bg-pitch text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ValuationModalProvider>
-            <Navbar />
-            {children}
-            <ValuationModal />
-          </ValuationModalProvider>
-        </ThemeProvider>
+        <ValuationModalProvider>
+          <Navbar />
+          {children}
+          <ValuationModal />
+        </ValuationModalProvider>
       </body>
     </html>
   );

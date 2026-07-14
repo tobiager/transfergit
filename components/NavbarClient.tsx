@@ -3,46 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useValuationModal } from "./ValuationModalContext";
 import { Logo } from "./Logo";
 import { SearchInput } from "./SearchInput";
 import { StarButton } from "./StarButton";
-
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount flag to avoid SSR/client theme mismatch, not a state sync.
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <span className="h-9 w-9 shrink-0" aria-hidden />;
-  }
-
-  const isDark = resolvedTheme === "dark";
-
-  return (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated text-muted transition hover:text-foreground"
-    >
-      {isDark ? (
-        <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 14a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1ZM4 11a1 1 0 1 0 0 2h1a1 1 0 1 0 0-2H4Zm14 0a1 1 0 1 0 0 2h1a1 1 0 1 0 0-2h-1ZM5.64 5.64a1 1 0 0 1 1.41 0l.71.7a1 1 0 1 1-1.42 1.42l-.7-.71a1 1 0 0 1 0-1.41Zm10.6 10.6a1 1 0 0 1 1.42 0l.7.71a1 1 0 0 1-1.41 1.41l-.71-.7a1 1 0 0 1 0-1.42ZM18.36 5.64a1 1 0 0 1 0 1.41l-.7.71a1 1 0 1 1-1.42-1.42l.71-.7a1 1 0 0 1 1.41 0ZM7.76 16.24a1 1 0 0 1 0 1.42l-.71.7a1 1 0 0 1-1.41-1.41l.7-.71a1 1 0 0 1 1.42 0ZM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z" />
-        </svg>
-      ) : (
-        <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a.75.75 0 0 0-.94-.98A10 10 0 1 0 21.48 15.44a.75.75 0 0 0-.98-.94Z" />
-        </svg>
-      )}
-    </button>
-  );
-}
 
 export function NavbarClient({ stars }: { stars: number | null }) {
   const [scrolled, setScrolled] = useState(false);
@@ -85,7 +49,6 @@ export function NavbarClient({ stars }: { stars: number | null }) {
               >
                 ↓ Export card
               </Link>
-              <ThemeToggle />
             </div>
           </>
         ) : (
@@ -104,7 +67,6 @@ export function NavbarClient({ stars }: { stars: number | null }) {
               Hall of Fame
             </Link>
             <StarButton stars={stars} />
-            <ThemeToggle />
           </div>
         )}
       </nav>
