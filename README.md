@@ -12,8 +12,7 @@ Market value, transfer history, injuries — the whole file.
 
 ### **[⚽ Get your card →](https://transfergit.com)**
 
-<a href="https://transfergit.com/torvalds"><img src="https://www.transfergit.com/api/og/torvalds/portrait" width="240" alt="Transfergit card"></a>
-
+<a href="https://transfergit.com/torvalds"><img src="public/fan-cards/torvalds.png" width="240" alt="Transfergit"></a>
 
 </div>
 
