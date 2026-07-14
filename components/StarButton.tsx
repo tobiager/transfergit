@@ -27,7 +27,7 @@ export function StarButton({ stars }: { stars: number | null }) {
     >
       <GithubIcon />
       <StarIcon />
-      {stars !== null && <span className="tabular-nums text-value-green">{formatNumber(stars)}</span>}
+      {stars !== null && stars >= 20 && <span className="tabular-nums text-value-green">{formatNumber(stars)}</span>}
     </Link>
   );
 }
