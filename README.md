@@ -43,7 +43,7 @@ That's it. Your README now has a transfer fee.
 -  **5 export formats** — README · Full (4:5), Player card (1:1), Player card · Portrait (3:4), Story (9:16), Banner (16:9)
 
 <details>
-  <summary><b>⚽ Ver perfil de TransferGit y estadísticas del mercado (Clic para expandir)</b></summary>
+  <summary><b>⚽ View TransferGit profile and market statistics (Click to expand)</b></summary>
   <br>
   <p align="center">
     <a href="https://transfergit.com/torvalds">
