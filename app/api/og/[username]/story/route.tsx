@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { loadOgFonts } from "../../_shared/fonts";
 import { loadOgPlayer } from "../../_shared/data";
 import { OG_COLORS as C } from "../../_shared/theme";
 import { OgTrendArrow } from "../../_shared/OgTrendArrow";
@@ -19,37 +18,6 @@ import { FlagBadge, flagUrl } from "../../_shared/flagIcon";
 const WIDTH = 1080;
 const HEIGHT = 1920;
 const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
-
-interface OgFontBuffer {
-  name: string;
-  data: Buffer;
-  weight: 400 | 600 | 700;
-  style: "normal";
-}
-
-// This route runs on the Node.js runtime (see the deploy-size note below), so
-// unlike the other og routes it can't rely on `fetch(new URL(...))` to pull
-// font buffers — that only resolves through webpack's asset URLs under Edge.
-// Node reads the .ttf files straight off disk instead.
-async function loadOgFonts(): Promise<OgFontBuffer[]> {
-  const fontsDir = join(process.cwd(), "assets", "fonts");
-  const [archivoRegular, archivoSemiBold, archivoBold, archivoBlack, barlowCondensedSemiBold] =
-    await Promise.all([
-      readFile(join(fontsDir, "Archivo-Regular.ttf")),
-      readFile(join(fontsDir, "Archivo-SemiBold.ttf")),
-      readFile(join(fontsDir, "Archivo-Bold.ttf")),
-      readFile(join(fontsDir, "ArchivoBlack-Regular.ttf")),
-      readFile(join(fontsDir, "BarlowCondensed-SemiBold.ttf")),
-    ]);
-
-  return [
-    { name: "Archivo", data: archivoRegular, weight: 400, style: "normal" },
-    { name: "Archivo", data: archivoSemiBold, weight: 600, style: "normal" },
-    { name: "Archivo", data: archivoBold, weight: 700, style: "normal" },
-    { name: "Archivo Black", data: archivoBlack, weight: 400, style: "normal" },
-    { name: "Barlow Condensed", data: barlowCondensedSemiBold, weight: 600, style: "normal" },
-  ];
-}
 
 function NotFoundImage() {
   return (

@@ -13,8 +13,6 @@ import { evaluateAchievements, topTrophies } from "@/lib/achievements";
 import { LanguageBadge } from "../../_shared/languageIcon";
 import { FlagBadge } from "../../_shared/flagIcon";
 
-export const runtime = "edge";
-
 // 1200x1500 (4:5): "embed the whole profile" for READMEs — dense, no dead
 // space, same Floodlight look as the other 3 formats. Satori can't run
 // Recharts, so the Market Value Evolution graph is hand-drawn from
