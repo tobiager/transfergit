@@ -4,14 +4,40 @@ import { useEffect, useState } from "react";
 import { Check, Copy, Download, Link2, Share2, X as XIcon } from "lucide-react";
 import { TiltCard } from "./TiltCard";
 
+function XLogo({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z" />
+    </svg>
+  );
+}
+
+function LinkedInLogo({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.446-2.136 2.94v5.666H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.558V9h3.556v11.452z" />
+    </svg>
+  );
+}
+
 type Variant = "readme" | "card" | "portrait" | "story" | "social";
 
-const VARIANT_META: Record<Variant, { path: string; width: number; height: number; label: string; ratio: string }> = {
-  readme: { path: "/readme", width: 1200, height: 1500, label: "README · Full", ratio: "4:5" },
-  card: { path: "/card", width: 1200, height: 1200, label: "Player card", ratio: "1:1" },
-  portrait: { path: "/portrait", width: 900, height: 1200, label: "Player card · Portrait", ratio: "3:4" },
-  story: { path: "/story", width: 1080, height: 1920, label: "Story", ratio: "9:16" },
-  social: { path: "/social", width: 1200, height: 630, label: "Banner", ratio: "16:9" },
+const VARIANT_META: Record<
+  Variant,
+  { path: string; width: number; height: number; readmeWidth: number; label: string; ratio: string }
+> = {
+  readme: { path: "/readme", width: 1200, height: 1500, readmeWidth: 500, label: "README · Full", ratio: "4:5" },
+  card: { path: "/card", width: 1200, height: 1200, readmeWidth: 420, label: "Player card", ratio: "1:1" },
+  portrait: {
+    path: "/portrait",
+    width: 900,
+    height: 1200,
+    readmeWidth: 400,
+    label: "Player card · Portrait",
+    ratio: "3:4",
+  },
+  story: { path: "/story", width: 1080, height: 1920, readmeWidth: 320, label: "Story", ratio: "9:16" },
+  social: { path: "/social", width: 1200, height: 630, readmeWidth: 800, label: "Banner", ratio: "16:9" },
 };
 
 export function ExportPanel({ login, marketValueFormatted }: { login: string; marketValueFormatted: string }) {
@@ -51,7 +77,8 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   }
 
   async function copyMarkdown() {
-    const markdown = `[![TransferGit Card](${origin}${imagePath("readme")})](${profileUrl()})`;
+    const meta = VARIANT_META[variant];
+    const markdown = `<p align="center">\n  <a href="${profileUrl()}">\n    <img src="${origin}${imagePath(variant)}" alt="TransferGit ${meta.label}" width="${meta.readmeWidth}" />\n  </a>\n</p>`;
     try {
       await navigator.clipboard.writeText(markdown);
       setCopiedAction("markdown");
@@ -221,15 +248,17 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
               <button
                 type="button"
                 onClick={shareToX}
-                className="rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
+                className="flex items-center gap-3 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
               >
+                <XLogo />
                 Share on X
               </button>
               <button
                 type="button"
                 onClick={shareToLinkedIn}
-                className="rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
+                className="flex items-center gap-3 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
               >
+                <LinkedInLogo />
                 Share on LinkedIn
               </button>
             </div>

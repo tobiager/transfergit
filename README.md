@@ -12,6 +12,9 @@ Market value, transfer history, injuries — the whole file.
 
 ### **[⚽ Get your card →](https://transfergit.com)**
 
+<a href="https://transfergit.com/torvalds"><img src="https://www.transfergit.com/api/og/torvalds/portrait" width="240" alt="Transfergit card"></a>
+
+
 </div>
 
 ---
@@ -37,9 +40,17 @@ That's it. Your README now has a transfer fee.
 -  **Season-by-season stats** — one row per year you've shown up
 -  **Rank vs. legends** — percentile tier from PROSPECT to TOP 0.1%
 -  **Hall of Fame** — see where you land next to torvalds, gaearon, and co.
--  **4 export formats** — README · Full, Player card (3:4), Story (9:16), Banner (16:9)
+-  **5 export formats** — README · Full (4:5), Player card (1:1), Player card · Portrait (3:4), Story (9:16), Banner (16:9)
 
-![Transfergit full profile](docs/screenshots/profile.png)
+<details>
+  <summary><b>⚽ View TransferGit profile and market statistics (Click to expand)</b></summary>
+  <br>
+  <p align="center">
+    <a href="https://transfergit.com/torvalds">
+      <img src="https://www.transfergit.com/api/og/torvalds/readme" width="800" alt="Transfergit card">
+    </a>
+  </p>
+</details>
 
 ## How the market value works
 
