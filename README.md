@@ -1,11 +1,9 @@
 <div align="center">
 
-# ● TRANSFERGIT
+<img src="public/transfergit/cartel.png" width="500" alt="Transfergit">
 
 **Your GitHub, valued like a football player.**
 Market value, transfer history, injuries — the whole file.
-
-[![Get your card](https://transfergit.com/api/og/tobiager/readme)](https://transfergit.com/tobiager)
 
 [![GitHub stars](https://img.shields.io/github/stars/tobiager/transfergit?style=flat-square&color=00c853)](https://github.com/tobiager/transfergit/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1a3151?style=flat-square)](LICENSE)
@@ -31,15 +29,15 @@ That's it. Your README now has a transfer fee.
 
 ## What you get
 
-- 💰 **Market value in euros** — real formula, deliberately absurd inputs
-- 🔁 **Transfer history** — pulled from the orgs you've actually joined
-- 🩹 **Injury history** — burnout streaks detected from your commit calendar
-- 🏆 **Trophy cabinet** — 14 achievements across squad / international / Ballon d'Or tiers
-- 🔍 **Scouting metrics** — commits, stars, PRs, reviews, streaks, normalized 0-99
-- 📅 **Season-by-season stats** — one row per year you've shown up
-- 📈 **Rank vs. legends** — percentile tier from PROSPECT to TOP 0.1%
-- 🌟 **Hall of Fame** — see where you land next to torvalds, gaearon, and co.
-- 🖼️ **4 export formats** — README · Full, Player card (3:4), Story (9:16), Banner (16:9)
+-  **Market value in euros** — real formula, deliberately absurd inputs
+-  **Transfer history** — pulled from the orgs you've actually joined
+-  **Injury history** — burnout streaks detected from your commit calendar
+-  **Trophy cabinet** — 14 achievements across squad / international / Ballon d'Or tiers
+-  **Scouting metrics** — commits, stars, PRs, reviews, streaks, normalized 0-99
+-  **Season-by-season stats** — one row per year you've shown up
+-  **Rank vs. legends** — percentile tier from PROSPECT to TOP 0.1%
+-  **Hall of Fame** — see where you land next to torvalds, gaearon, and co.
+-  **4 export formats** — README · Full, Player card (3:4), Story (9:16), Banner (16:9)
 
 ![Transfergit full profile](docs/screenshots/profile.png)
 
