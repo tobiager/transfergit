@@ -52,7 +52,7 @@ export function PositionPitch({ main, secondary }: { main: string; secondary: st
       )}
 
       <g>
-        <circle cx={mainCoord.x} cy={mainCoord.y} r="10" fill="var(--tm-blue-bright)" />
+        <circle cx={mainCoord.x} cy={mainCoord.y} r="10" fill="var(--value-green)" />
         <circle cx={mainCoord.x} cy={mainCoord.y} r="10" fill="none" stroke="var(--pitch-elevated)" strokeWidth="2" />
       </g>
     </svg>

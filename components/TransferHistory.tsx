@@ -4,36 +4,21 @@ import { SectionHeader } from "./SectionHeader";
 export function TransferHistory({ transfers }: { transfers: Player["transfers"] }) {
   return (
     <div data-reveal-item className="overflow-hidden rounded-xl tm-card">
-      <SectionHeader title="Transfer History" />
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="font-table bg-surface-elevated text-xs uppercase tracking-wide text-muted">
-              <th className="px-4 py-2 text-left font-semibold">Season</th>
-              <th className="px-4 py-2 text-left font-semibold">From</th>
-              <th className="px-4 py-2 text-left font-semibold">To</th>
-              <th className="px-4 py-2 text-right font-semibold">Fee</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transfers.map((t, i) => (
-              <tr
-                key={`${t.season}-${i}`}
-                className={`h-11 transition-colors hover:bg-tm-blue-bright/10 ${
-                  i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40"
-                }`}
-              >
-                <td className="px-4 py-2 font-medium tabular-nums">{t.season}</td>
-                <td className="px-4 py-2 text-muted">{t.from}</td>
-                <td className="px-4 py-2 font-medium">{t.to}</td>
-                <td className="px-4 py-2 text-right font-semibold tabular-nums text-value-green">
-                  {t.fee}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SectionHeader title="Transfer History" right={`${transfers.length} moves`} />
+      <ul className="divide-y divide-border">
+        {transfers.map((t, i) => (
+          <li key={`${t.season}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="font-mono text-muted">{t.season}</span>
+              <span className="text-border">·</span>
+              <span className="text-muted">{t.from}</span>
+              <span className="text-muted">→</span>
+              <span className="font-semibold">{t.to}</span>
+            </span>
+            <span className="shrink-0 font-semibold tabular-nums text-value-green">{t.fee}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

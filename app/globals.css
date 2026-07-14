@@ -1,45 +1,31 @@
 @import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
 
-/* Dark = broadcast identity (default, unchanged). Light = real Transfermarkt
-   look (flat #f2f2f2, white cards, navy section headers). next-themes toggles
-   the .dark/.light class on <html>; both are duplicated explicitly so the
-   token set stays a single source of truth per theme. */
-:root,
-.dark {
-  --pitch: #0a0e1a;
-  --pitch-elevated: #141b2e;
-  --surface: #10151f;
-  --surface-elevated: #141b28;
-  --border: #232c3d;
+/* Floodlight identity: deep navy-green with a neon-green accent + glow
+   (design/floodlight-reference.html). Dark mode only, permanently — no
+   light theme, no toggle. OG cards never read these — they hardcode the
+   same dark palette in app/api/og/_shared/theme.ts (Satori can't read CSS vars). */
+:root {
+  --pitch: #060a12;
+  --pitch-elevated: #0d1420;
+  --surface: #0b111c;
+  --surface-elevated: #111a28;
+  --border: #1f2937;
   --foreground: #e7ecf5;
   --muted: #8a94a6;
   --tm-blue-deep: #1a3151;
   --tm-blue: #244a73;
-  --tm-blue-bright: #3ea6ff;
-  --value-green: #00c853;
+  --tm-blue-bright: #4d9fff;
+  --value-green: #00e676;
+  --value-green-rgb: 0, 230, 118;
   --value-red: #e5484d;
   --gold: #ffc400;
   --card-border: rgba(255, 255, 255, 0.06);
   --card-inset-highlight: rgba(255, 255, 255, 0.03);
-}
-
-.light {
-  --pitch: #f2f2f2;
-  --pitch-elevated: #ffffff;
-  --surface: #ffffff;
-  --surface-elevated: #f7f7f8;
-  --border: #e5e5e5;
-  --foreground: #17202e;
-  --muted: #5b6472;
-  --tm-blue-deep: #1a3151;
-  --tm-blue: #1d75a3;
-  --tm-blue-bright: #0e5c8a;
-  --value-green: #0a7a45;
-  --value-red: #c81e2c;
-  --gold: #9c6f00;
-  --card-border: #e5e5e5;
-  --card-inset-highlight: rgba(0, 0, 0, 0.02);
+  --grid-line: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(11, 17, 28, 0.6);
+  --glass-bg-solid: rgba(11, 17, 28, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
 }
 
 @theme inline {
@@ -59,42 +45,49 @@
   --font-display: var(--font-display);
   --font-table: var(--font-table);
   --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
+  position: relative;
   background-color: var(--pitch);
-  background-image:
-    radial-gradient(ellipse 70% 55% at 50% -10%, var(--pitch-elevated), transparent),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-image: radial-gradient(
+    ellipse 60% 50% at 50% -10%,
+    color-mix(in srgb, var(--value-green) 10%, var(--pitch-elevated)),
+    transparent
+  );
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
 }
 
-.light body,
-.light {
-  color-scheme: light;
-}
-
-.dark {
-  color-scheme: dark;
-}
-
-.light body {
-  background-image: radial-gradient(ellipse 70% 55% at 50% -10%, var(--pitch-elevated), transparent);
-  position: relative;
-}
-
-.light body::before {
+/* Barely-there grid: low-opacity lines that fade out entirely behind the
+   central content column and only "breathe" near the page edges. */
+body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='90'%3E%3Cpath d='M0 45h120M60 0v90M60 45m-20 0a20 20 0 1 0 40 0a20 20 0 1 0 -40 0' fill='none' stroke='rgba(0,0,0,0.05)' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: 640px 480px;
-  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 45%, black 100%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 45%, black 100%);
+  background-image:
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 64px);
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 40%, transparent 40%, black 95%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 40%, transparent 40%, black 95%);
+}
+
+:root {
+  color-scheme: dark;
 }
 
 .font-display {
@@ -103,6 +96,27 @@ body {
 
 .font-table {
   font-family: var(--font-table), sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* Neon-green glow, reused by the SCOUT button, market-value box, ticker
+   bar, featured fan card and export buttons. */
+.glow-green {
+  box-shadow: 0 0 24px 0 rgba(var(--value-green-rgb), 0.35);
+}
+
+.glow-green-border {
+  border-color: var(--value-green);
+  box-shadow:
+    0 0 0 1px rgba(var(--value-green-rgb), 0.4),
+    0 0 24px 0 rgba(var(--value-green-rgb), 0.25);
+}
+
+.glow-green-text {
+  text-shadow: 0 0 16px rgba(var(--value-green-rgb), 0.5);
 }
 
 body,
@@ -116,20 +130,44 @@ body,
   border-radius: 4px;
 }
 
+/* Glass card: first-level cards only (header, stat cards, sections, export).
+   Never nest a second blurred surface inside one of these — a blur inside a
+   blur tanks paint performance and doubles the frosting. Elements nested
+   inside a .tm-card (tiles, tooltips, table rows) use solid semi-transparent
+   backgrounds with no filter of their own. */
 .tm-card {
-  border: 1px solid var(--card-border);
-  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow:
-    0 1px 0 var(--card-inset-highlight) inset,
+    0 1px 0 var(--glass-highlight) inset,
     0 2px 6px rgba(0, 0, 0, 0.5),
     0 18px 36px -16px rgba(0, 0, 0, 0.65);
 }
 
-.light .tm-card {
-  box-shadow:
-    0 1px 0 var(--card-inset-highlight) inset,
-    0 1px 3px rgba(16, 24, 40, 0.08),
-    0 4px 12px rgba(16, 24, 40, 0.06);
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tm-card {
+    background: var(--glass-bg-solid);
+  }
+}
+
+/* Selective tint accents on top of .tm-card — injury (red), trophies
+   (gold) and export (green) each get a whole-card wash; every other
+   section keeps the plain neutral glass border. */
+.tm-card-red {
+  border-color: rgba(255, 61, 87, 0.25);
+  background: rgba(255, 61, 87, 0.03);
+}
+
+.tm-card-gold {
+  border-color: rgba(255, 196, 0, 0.25);
+  background: linear-gradient(180deg, rgba(255, 196, 0, 0.06), rgba(255, 255, 255, 0.02));
+}
+
+.tm-card-green {
+  border-color: rgba(0, 200, 83, 0.3);
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.1), rgba(8, 12, 24, 0.6) 45%);
 }
 
 @keyframes record-pulse {
@@ -178,6 +216,21 @@ body,
   animation: modal-panel-in 200ms ease-out;
 }
 
+@keyframes modal-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-modal-row {
+  animation: modal-row-in 200ms ease-out both;
+}
+
 @keyframes trophy-glow {
   0%,
   100% {
@@ -192,12 +245,27 @@ body,
   animation: trophy-glow 2.4s ease-in-out infinite;
 }
 
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  animation: ticker-scroll 32s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .record-pulse-ring,
   .shimmer,
   .animate-modal-overlay,
   .animate-modal-panel,
-  .trophy-glow-gold {
+  .animate-modal-row,
+  .trophy-glow-gold,
+  .ticker-track {
     animation: none !important;
   }
 }

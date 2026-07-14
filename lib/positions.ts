@@ -13,6 +13,28 @@ const CATEGORY_LABEL: Record<Category, string> = {
 
 const FULLSTACK_LABEL = "Attacking Midfielder";
 
+const POSITION_ABBREV: Record<string, string> = {
+  "Right Winger": "RW",
+  "Central Midfielder": "CM",
+  Goalkeeper: "GK",
+  "Defensive Midfielder": "CDM",
+  "Full-Back": "FB",
+  "Attacking Midfielder": "CAM",
+};
+
+// Short jersey-style code for the facts row / OG cards, e.g. "Central
+// Midfielder" -> "CM". Falls back to initials for any unmapped label.
+export function abbreviatePosition(label: string): string {
+  return (
+    POSITION_ABBREV[label] ??
+    label
+      .split(/[\s-]+/)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+  );
+}
+
 const FRONTEND_LANGS = new Set([
   "JavaScript",
   "TypeScript",

@@ -26,7 +26,7 @@ export function DevFan() {
               the transform (translate/scale) of the child — so they don't
               compete for the same property. */}
           <div className="group/card transition-transform duration-300 ease-out hover:z-20 hover:-translate-y-5 hover:scale-110">
-            <div className="overflow-hidden rounded-xl shadow-[0_8px_16px_rgba(0,0,0,0.4),0_24px_48px_-16px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-shadow duration-300 group-hover/card:shadow-[0_16px_32px_rgba(0,0,0,0.5),0_40px_70px_-16px_rgba(0,0,0,0.75)]">
+            <div className="overflow-hidden rounded-xl shadow-[0_8px_16px_rgba(0,0,0,0.4),0_24px_48px_-16px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-shadow duration-300 group-hover/card:shadow-[0_16px_32px_rgba(0,0,0,0.5),0_40px_70px_-16px_rgba(0,0,0,0.75),0_0_36px_rgba(0,230,118,0.35)] group-hover/card:ring-value-green/50">
               <Image
                 src={`/fan-cards/${card.username}.png`}
                 alt={`${card.username}'s player card`}

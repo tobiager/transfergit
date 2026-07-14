@@ -49,7 +49,7 @@ function RecordDot(props: {
         <clipPath id="chart-club-avatar-clip">
           <circle cx={cx} cy={cy} r={r} />
         </clipPath>
-        <circle cx={cx} cy={cy} r={r + 1.5} fill="var(--pitch)" stroke="var(--tm-blue-bright)" strokeWidth={1.5} />
+        <circle cx={cx} cy={cy} r={r + 1.5} fill="var(--pitch)" stroke="var(--value-green)" strokeWidth={1.5} />
         <image
           href={clubAvatarUrl}
           x={cx - r}
@@ -63,7 +63,7 @@ function RecordDot(props: {
   }
 
   if (payload.year !== recordYear) {
-    return <Dot cx={cx} cy={cy} r={3} fill="var(--tm-blue-bright)" stroke="none" />;
+    return <Dot cx={cx} cy={cy} r={3} fill="var(--value-green)" stroke="none" />;
   }
 
   const labelX = recordTextAnchor === "start" ? cx - 8 : recordTextAnchor === "end" ? cx + 8 : cx;
@@ -111,7 +111,7 @@ function ChartTooltip({
   return (
     <div className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm shadow-lg">
       <span className="font-semibold">{point.year}</span> ·{" "}
-      <span className="text-tm-blue-bright">{formatMarketValue(point.value)}</span>
+      <span className="text-value-green">{formatMarketValue(point.value)}</span>
       <span className="text-muted">{changeLabel}</span>
     </div>
   );
@@ -164,9 +164,9 @@ export function MarketValueChart({
         <AreaChart data={data} margin={{ top: 24, right: 24, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--tm-blue-bright)" stopOpacity={0.55} />
-              <stop offset="60%" stopColor="var(--tm-blue-bright)" stopOpacity={0.12} />
-              <stop offset="100%" stopColor="var(--tm-blue-bright)" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--value-green)" stopOpacity={0.55} />
+              <stop offset="60%" stopColor="var(--value-green)" stopOpacity={0.12} />
+              <stop offset="100%" stopColor="var(--value-green)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -189,7 +189,7 @@ export function MarketValueChart({
           <Area
             type="monotone"
             dataKey="value"
-            stroke="var(--tm-blue-bright)"
+            stroke="var(--value-green)"
             strokeWidth={2}
             fill="url(#valueGradient)"
             isAnimationActive={animate}
@@ -202,7 +202,7 @@ export function MarketValueChart({
                 clubAvatarUrl={currentClubAvatar ?? null}
               />
             }
-            activeDot={{ r: 5, fill: "var(--tm-blue-bright)", stroke: "var(--pitch)", strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: "var(--value-green)", stroke: "var(--pitch)", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

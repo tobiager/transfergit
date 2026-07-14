@@ -1,0 +1,705 @@
+[
+  {
+    "login": "torvalds",
+    "name": "Linus Torvalds",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1024025?v=4",
+    "marketValue": 4786639275,
+    "marketValueFormatted": "€4.79bn",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "Linux Foundation",
+    "trend": {
+      "direction": "up",
+      "pct": 0.7652409505160279
+    },
+    "followers": 311327,
+    "stars": 250658,
+    "commitsThisSeason": 1735
+  },
+  {
+    "login": "karpathy",
+    "name": "Andrej",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/241138?u=05376db54475c3d23b3a409f4c47d14c4855dc28&v=4",
+    "marketValue": 4116283481.310001,
+    "marketValueFormatted": "€4.12bn",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Free Agent",
+    "trend": {
+      "direction": "up",
+      "pct": 25.060809697384016
+    },
+    "followers": 209104,
+    "stars": 476162,
+    "commitsThisSeason": 223
+  },
+  {
+    "login": "getify",
+    "name": "Kyle Simpson",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/150330?u=41aa48771028d34bcf025eefe919bf75fbda77d4&v=4",
+    "marketValue": 1314409050.7350004,
+    "marketValueFormatted": "€1.31bn",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "BYOJS",
+    "trend": {
+      "direction": "down",
+      "pct": -3.0547752930942007
+    },
+    "followers": 45181,
+    "stars": 216281,
+    "commitsThisSeason": 66
+  },
+  {
+    "login": "addyosmani",
+    "name": "Addy Osmani",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/110953?u=b80ece00784ce069f15b4f27f7dccd50edc7852a&v=4",
+    "marketValue": 1206745100,
+    "marketValueFormatted": "€1.21bn",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "jQuery",
+    "trend": {
+      "direction": "up",
+      "pct": 84.40461757778172
+    },
+    "followers": 51396,
+    "stars": 138778,
+    "commitsThisSeason": 449
+  },
+  {
+    "login": "antfu",
+    "name": "Anthony Fu",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/11247099?u=5c092d3773a443e480a294f2b67aa39395982f46&v=4",
+    "marketValue": 894702105.0000001,
+    "marketValueFormatted": "€894.70m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Ecma TC39",
+    "trend": {
+      "direction": "up",
+      "pct": 5.409427804346165
+    },
+    "followers": 39653,
+    "stars": 65919,
+    "commitsThisSeason": 1370
+  },
+  {
+    "login": "yyx990803",
+    "name": "Evan You",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/499550?u=dd9a9ba40daf29be7c310f7075e74251609b03f3&v=4",
+    "marketValue": 878863424.67,
+    "marketValueFormatted": "€878.90m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Singapore",
+    "countryIso2": "sg",
+    "club": "Vue",
+    "trend": {
+      "direction": "down",
+      "pct": -0.5675672447510356
+    },
+    "followers": 108451,
+    "stars": 15246,
+    "commitsThisSeason": 59
+  },
+  {
+    "login": "BurntSushi",
+    "name": "Andrew Gallant",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/456674?u=6b60f689b8054473ea9d8bddc42211e12ffacda2&v=4",
+    "marketValue": 844272837.5950001,
+    "marketValueFormatted": "€844.30m",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "The Rust Programming Language",
+    "trend": {
+      "direction": "down",
+      "pct": -5.539539377716237
+    },
+    "followers": 12623,
+    "stars": 112263,
+    "commitsThisSeason": 373
+  },
+  {
+    "login": "wesbos",
+    "name": "Wes Bos",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/176013?u=1d436e62dc32dbbf1bfefb4d658cd67553154c42&v=4",
+    "marketValue": 801923326.0500001,
+    "marketValueFormatted": "€801.90m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "me",
+    "trend": {
+      "direction": "up",
+      "pct": 7.064829906767681
+    },
+    "followers": 35635,
+    "stars": 80354,
+    "commitsThisSeason": 576
+  },
+  {
+    "login": "developit",
+    "name": "Jason Miller",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/105127?u=9dbda1907e83e069f6f1ee68b77111f784fae663&v=4",
+    "marketValue": 531667201.065,
+    "marketValueFormatted": "€531.70m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Canada",
+    "countryIso2": "ca",
+    "club": "Babel",
+    "trend": {
+      "direction": "up",
+      "pct": 9.875744009459249
+    },
+    "followers": 13010,
+    "stars": 76515,
+    "commitsThisSeason": 326
+  },
+  {
+    "login": "paulirish",
+    "name": "Paul Irish",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/39191?u=6371e7d88f56f9fc4cf519a7ff4b1eb91dca2f17&v=4",
+    "marketValue": 531066690.00000006,
+    "marketValueFormatted": "€531.10m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "The Chromium Project",
+    "trend": {
+      "direction": "up",
+      "pct": 20.17814754977108
+    },
+    "followers": 31896,
+    "stars": 28639,
+    "commitsThisSeason": 760
+  },
+  {
+    "login": "ai",
+    "name": "Andrey Sitnik",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/19343?u=8bd2a73e1912dbfac2a3f3968839fc6a473906c4&v=4",
+    "marketValue": 514333380.00000006,
+    "marketValueFormatted": "€514.30m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Spain",
+    "countryIso2": "es",
+    "club": "Evil Martians",
+    "trend": {
+      "direction": "flat",
+      "pct": 0.41649445613632685
+    },
+    "followers": 10067,
+    "stars": 52890,
+    "commitsThisSeason": 1423
+  },
+  {
+    "login": "jaredpalmer",
+    "name": "Jared Palmer",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/4060187?u=8093f80db577610c38c680a82550e6b1952b8f7e&v=4",
+    "marketValue": 473343498.1000001,
+    "marketValueFormatted": "€473.30m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "The Palmer Group",
+    "trend": {
+      "direction": "flat",
+      "pct": -0.3606253207817879
+    },
+    "followers": 10348,
+    "stars": 80933,
+    "commitsThisSeason": 123
+  },
+  {
+    "login": "egoist",
+    "name": "EGOIST",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/8784712?u=c9a8fee657b629ea1b9a09df4c958f0ed8fac9b1&v=4",
+    "marketValue": 460578727.1250001,
+    "marketValueFormatted": "€460.60m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Singapore",
+    "countryIso2": "sg",
+    "club": "Light Bulb",
+    "trend": {
+      "direction": "down",
+      "pct": -10.551864024642207
+    },
+    "followers": 13278,
+    "stars": 66476,
+    "commitsThisSeason": 197
+  },
+  {
+    "login": "jashkenas",
+    "name": "Jeremy Ashkenas",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/4732?u=1ce1aba113b641e1a110345609830aec2b056121&v=4",
+    "marketValue": 448391680.00000006,
+    "marketValueFormatted": "€448.40m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "DocumentCloud",
+    "trend": {
+      "direction": "flat",
+      "pct": -0.04997501249374728
+    },
+    "followers": 13691,
+    "stars": 78554,
+    "commitsThisSeason": 0
+  },
+  {
+    "login": "evanw",
+    "name": "Evan Wallace",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/406394?u=311ddafa2f676e0b821384e18b05f0f4e08bcacc&v=4",
+    "marketValue": 430408483.50500005,
+    "marketValueFormatted": "€430.40m",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "Free Agent",
+    "trend": {
+      "direction": "down",
+      "pct": -18.161331189495733
+    },
+    "followers": 14133,
+    "stars": 64186,
+    "commitsThisSeason": 74
+  },
+  {
+    "login": "defunkt",
+    "name": "Chris Wanstrath",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/2?u=7675c0370b7876d71d1ee9b250b540fe1be28f23&v=4",
+    "marketValue": 319427460,
+    "marketValueFormatted": "€319.40m",
+    "position": "Attacking Midfielder",
+    "positionAbbrev": "CAM",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Mustache",
+    "trend": {
+      "direction": "flat",
+      "pct": 0
+    },
+    "followers": 22728,
+    "stars": 36944,
+    "commitsThisSeason": 0
+  },
+  {
+    "login": "mdo",
+    "name": "Mark Otto",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/98681?u=06189d8e78eb46bb608df3f705c229c5d43d797c&v=4",
+    "marketValue": 314260683.88000005,
+    "marketValueFormatted": "€314.30m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "Bootstrap",
+    "trend": {
+      "direction": "up",
+      "pct": 5.963619032684555
+    },
+    "followers": 23703,
+    "stars": 21167,
+    "commitsThisSeason": 175
+  },
+  {
+    "login": "feross",
+    "name": "Feross Aboukhadijeh",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/121766?u=c9234b2a786d4d3722ab876563eb63069cd54959&v=4",
+    "marketValue": 280501090.65,
+    "marketValueFormatted": "€280.50m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "PeerCDN",
+    "trend": {
+      "direction": "flat",
+      "pct": 0.002854658624439403
+    },
+    "followers": 14871,
+    "stars": 33669,
+    "commitsThisSeason": 9
+  },
+  {
+    "login": "acdlite",
+    "name": "Andrew Clark",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/3624098?u=94d8ba563cef4d8fd24c4b666272a71af46a2fa1&v=4",
+    "marketValue": 279154784.48,
+    "marketValueFormatted": "€279.20m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "React Community",
+    "trend": {
+      "direction": "up",
+      "pct": 1.1803153043873085
+    },
+    "followers": 14983,
+    "stars": 34595,
+    "commitsThisSeason": 83
+  },
+  {
+    "login": "paulmillr",
+    "name": "Paul Miller",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/574696?u=8f81cc3dbd2a586e2d608d695b905c069ad8050e&v=4",
+    "marketValue": 262968420.00000003,
+    "marketValueFormatted": "€263.00m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Brunch",
+    "trend": {
+      "direction": "up",
+      "pct": 0.5139382656018324
+    },
+    "followers": 4456,
+    "stars": 29634,
+    "commitsThisSeason": 618
+  },
+  {
+    "login": "dhh",
+    "name": "David Heinemeier Hansson",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/2741?u=ce0dd0173c534e7e8b72e1cb393fed76e904a91c&v=4",
+    "marketValue": 262520940.00000003,
+    "marketValueFormatted": "€262.50m",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Ruby on Rails",
+    "trend": {
+      "direction": "up",
+      "pct": 1.069559820581769
+    },
+    "followers": 25203,
+    "stars": 213,
+    "commitsThisSeason": 1939
+  },
+  {
+    "login": "jakearchibald",
+    "name": "Jake Archibald",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/93594?v=4",
+    "marketValue": 260128506.88,
+    "marketValueFormatted": "€260.10m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Mozilla",
+    "trend": {
+      "direction": "up",
+      "pct": 14.52868510039456
+    },
+    "followers": 11578,
+    "stars": 23449,
+    "commitsThisSeason": 387
+  },
+  {
+    "login": "shadcn",
+    "name": "shadcn",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/124599?u=af69b5608ec2a165471a2fd310d94c1bea60aebe&v=4",
+    "marketValue": 241632930.00000003,
+    "marketValueFormatted": "€241.60m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Stanford University Digital Library",
+    "trend": {
+      "direction": "up",
+      "pct": 53.02286116773001
+    },
+    "followers": 16173,
+    "stars": 9956,
+    "commitsThisSeason": 792
+  },
+  {
+    "login": "gcanti",
+    "name": "Giulio Canti",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/878912?u=3ff4c1cd724888d4e864258865467b5b93e1b01b&v=4",
+    "marketValue": 236833343.01000002,
+    "marketValueFormatted": "€236.80m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Italy",
+    "countryIso2": "it",
+    "club": "Free Agent",
+    "trend": {
+      "direction": "flat",
+      "pct": 0.027651471085329143
+    },
+    "followers": 2662,
+    "stars": 32170,
+    "commitsThisSeason": 314
+  },
+  {
+    "login": "mojombo",
+    "name": "Tom Preston-Werner",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1?v=4",
+    "marketValue": 228813860.00000003,
+    "marketValueFormatted": "€228.80m",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "TOML",
+    "trend": {
+      "direction": "flat",
+      "pct": 0
+    },
+    "followers": 24677,
+    "stars": 14009,
+    "commitsThisSeason": 0
+  },
+  {
+    "login": "rauchg",
+    "name": "Guillermo Rauch",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/13041?u=1ee8d111657cdd02ff6d253df00978d17ee6d722&v=4",
+    "marketValue": 221795974.18,
+    "marketValueFormatted": "€221.80m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Vercel",
+    "trend": {
+      "direction": "up",
+      "pct": 2.3077995026934497
+    },
+    "followers": 16976,
+    "stars": 20092,
+    "commitsThisSeason": 55
+  },
+  {
+    "login": "douglascrockford",
+    "name": "Douglas Crockford",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/262641?u=f8a367b4939ae0945f40ff5b0a330f187a237522&v=4",
+    "marketValue": 217866369.60000002,
+    "marketValueFormatted": "€217.90m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Virgule-Solidus",
+    "trend": {
+      "direction": "up",
+      "pct": 1.1278898081583155
+    },
+    "followers": 21928,
+    "stars": 12551,
+    "commitsThisSeason": 117
+  },
+  {
+    "login": "tannerlinsley",
+    "name": "Tanner Linsley",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/5580297?u=51d067c544cf313c54d7e71b912a8afd11d849fb&v=4",
+    "marketValue": 187147290.00000003,
+    "marketValueFormatted": "€187.10m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "TanStack",
+    "trend": {
+      "direction": "up",
+      "pct": 1.1332874430681326
+    },
+    "followers": 14808,
+    "stars": 3024,
+    "commitsThisSeason": 1065
+  },
+  {
+    "login": "wycats",
+    "name": "Yehuda Katz",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/4?v=4",
+    "marketValue": 179666850,
+    "marketValueFormatted": "€179.70m",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "Ruby on Rails",
+    "trend": {
+      "direction": "up",
+      "pct": 14.0065288680465
+    },
+    "followers": 10310,
+    "stars": 8701,
+    "commitsThisSeason": 1355
+  },
+  {
+    "login": "matz",
+    "name": "Yukihiro \"Matz\" Matsumoto",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/30733?u=77a590bb5dddfc7e7ee0d1d058b05e0fb709653f&v=4",
+    "marketValue": 168846315,
+    "marketValueFormatted": "€168.80m",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "Japan",
+    "countryIso2": "jp",
+    "club": "mruby",
+    "trend": {
+      "direction": "up",
+      "pct": 11.372061182688268
+    },
+    "followers": 10484,
+    "stars": 6274,
+    "commitsThisSeason": 4578
+  },
+  {
+    "login": "mjackson",
+    "name": "Michael Jackson",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/92839?u=2727b5ab382f6b2f3be84a257c2dcdc50243d78f&v=4",
+    "marketValue": 148826040,
+    "marketValueFormatted": "€148.80m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "React Training",
+    "trend": {
+      "direction": "up",
+      "pct": 1.1778219492168045
+    },
+    "followers": 7470,
+    "stars": 8310,
+    "commitsThisSeason": 675
+  },
+  {
+    "login": "threepointone",
+    "name": "Sunil Pai",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/18808?v=4",
+    "marketValue": 125539260.00000001,
+    "marketValueFormatted": "€125.50m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United Kingdom",
+    "countryIso2": "gb",
+    "club": "Cloudflare, Inc.",
+    "trend": {
+      "direction": "up",
+      "pct": 2.811894032039025
+    },
+    "followers": 4303,
+    "stars": 9209,
+    "commitsThisSeason": 1003
+  },
+  {
+    "login": "ryanflorence",
+    "name": "Ryan Florence",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/100200?u=fe927a53ee20f0a1d5b49f185f4d5f0a3aec1614&v=4",
+    "marketValue": 115774412.16,
+    "marketValueFormatted": "€115.80m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "React Training",
+    "trend": {
+      "direction": "flat",
+      "pct": 0.08802608284570124
+    },
+    "followers": 9899,
+    "stars": 8487,
+    "commitsThisSeason": 73
+  },
+  {
+    "login": "vjeux",
+    "name": "Christopher Chedeau",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/197597?v=4",
+    "marketValue": 44250130.1,
+    "marketValueFormatted": "€44.30m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "United States",
+    "countryIso2": "us",
+    "club": "jDataView",
+    "trend": {
+      "direction": "down",
+      "pct": -5.213933121397221
+    },
+    "followers": 4327,
+    "stars": 1862,
+    "commitsThisSeason": 4
+  },
+  {
+    "login": "sebmck",
+    "name": "Sebastian",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/853712?u=cc694673f95914a0226da398e8603f8074a338eb&v=4",
+    "marketValue": 40732450,
+    "marketValueFormatted": "€40.70m",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Free Agent",
+    "trend": {
+      "direction": "flat",
+      "pct": -0.04997501249375678
+    },
+    "followers": 4836,
+    "stars": 0,
+    "commitsThisSeason": 0
+  },
+  {
+    "login": "swyx",
+    "name": "swyx",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/142970592?u=f9fa76f50bd8f1f09fc5d010e08e415d312c2ba2&v=4",
+    "marketValue": 372000,
+    "marketValueFormatted": "€375k",
+    "position": "Central Midfielder",
+    "positionAbbrev": "CM",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Free Agent",
+    "trend": {
+      "direction": "flat",
+      "pct": 0
+    },
+    "followers": 41,
+    "stars": 0,
+    "commitsThisSeason": 0
+  },
+  {
+    "login": "tomchristie",
+    "name": "Tom Christie",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/227403234?u=be79bafa8144491a6a5ecee8724c82b37a4fef54&v=4",
+    "marketValue": 131200,
+    "marketValueFormatted": "€125k",
+    "position": "Right Winger",
+    "positionAbbrev": "RW",
+    "country": "Unknown",
+    "countryIso2": null,
+    "club": "Free Agent",
+    "trend": {
+      "direction": "flat",
+      "pct": 0
+    },
+    "followers": 19,
+    "stars": 0,
+    "commitsThisSeason": 0
+  }
+]

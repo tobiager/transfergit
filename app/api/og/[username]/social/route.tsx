@@ -1,16 +1,21 @@
 import { ImageResponse } from "next/og";
 import { loadOgFonts } from "../../_shared/fonts";
 import { loadOgPlayer } from "../../_shared/data";
-import { buildSparklinePaths } from "../../_shared/sparkline";
 import { OG_COLORS as C } from "../../_shared/theme";
-import { topUnlockedTrophies } from "../../_shared/trophies";
-import { TrophySilhouette } from "../../_shared/TrophySilhouette";
-import { OgFlag } from "../../_shared/OgFlag";
+import { OgTrendArrow } from "../../_shared/OgTrendArrow";
+import { formatCardName } from "../../_shared/cardContent";
+import { getSiteHost } from "@/lib/site-url";
+import { percentileTier } from "@/lib/ranking";
+import { computeMarketValueTrend } from "@/lib/format";
+import { abbreviatePosition } from "@/lib/positions";
+import { LanguageBadge } from "../../_shared/languageIcon";
+import { FlagBadge } from "../../_shared/flagIcon";
 
 export const runtime = "edge";
 
-// 1200x630: the only variant used for OG/Twitter meta tags — social
-// platforms crop vertical images badly, so this is the horizontal one.
+// 1200x630 (16:9): the "banner" format — photo left, name + stats center,
+// value right — and the only variant wired into OG/Twitter meta tags
+// (social platforms crop vertical images badly).
 const WIDTH = 1200;
 const HEIGHT = 630;
 const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
@@ -50,8 +55,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
     });
   }
 
-  const sparkline = buildSparklinePaths(player.marketValueHistory, 280, 72);
-  const trophies = topUnlockedTrophies(player, 3);
+  const currentSeason = player.seasons[0];
+  const tier = percentileTier({
+    stars: player.trophies.stars,
+    commits: currentSeason?.commits ?? 0,
+    followers: player.trophies.followers,
+  });
+  const siteHost = getSiteHost();
+  const trend = computeMarketValueTrend(player.marketValueHistory);
+  const displayName = formatCardName(player.name, player.login);
 
   return new ImageResponse(
     (
@@ -60,121 +72,109 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
           width: WIDTH,
           height: HEIGHT,
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
+          alignItems: "center",
           backgroundColor: C.pitch,
-          backgroundImage: `radial-gradient(circle at 12% -10%, ${C.pitchElevated}, transparent 55%)`,
-          padding: 56,
+          backgroundImage: "radial-gradient(circle at 12% -10%, rgba(0,230,118,0.14), transparent 55%)",
+          padding: 64,
           position: "relative",
           fontFamily: "Archivo",
+          borderWidth: 2,
+          borderStyle: "solid",
+          borderColor: "rgba(0,230,118,0.35)",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: 610 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
-            <img
-              src={player.avatarUrl}
-              alt=""
-              width={140}
-              height={140}
-              style={{ borderRadius: 20, borderWidth: 2, borderStyle: "solid", borderColor: C.border, flexShrink: 0 }}
-            />
-            <div style={{ display: "flex", flexDirection: "column", marginLeft: 32, width: 438 }}>
-              <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 48, color: C.foreground, lineHeight: 1.1 }}>
-                {player.name}
-              </div>
-              <div style={{ display: "flex", fontSize: 24, color: C.blueBright, marginTop: 10 }}>
-                @{player.login}
-              </div>
-              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", marginTop: 18 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    backgroundColor: C.navy,
-                    color: "#ffffff",
-                    fontFamily: "Barlow Condensed",
-                    fontSize: 18,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    padding: "6px 16px",
-                    borderRadius: 6,
-                  }}
-                >
-                  {player.position.main}
-                </div>
-                <div style={{ display: "flex", marginLeft: 16 }}>
-                  <OgFlag iso2={player.nationalityIso2} size={30} />
-                </div>
-                <div style={{ display: "flex", fontSize: 22, color: C.muted, marginLeft: 12 }}>
-                  {player.currentClub}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) only renders native <img>, not next/image. */}
+        <img
+          src={player.avatarUrl}
+          alt=""
+          width={220}
+          height={220}
+          style={{ borderRadius: 28, borderWidth: 3, borderStyle: "solid", borderColor: C.border, flexShrink: 0 }}
+        />
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", width: 420 }}>
+        <div style={{ display: "flex", flexDirection: "column", marginLeft: 48, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
             <div
               style={{
                 display: "flex",
-                fontFamily: "Barlow Condensed",
-                fontSize: 20,
-                color: C.blueBright,
+                fontFamily: "Archivo Black",
+                fontSize: 48,
+                color: C.foreground,
                 textTransform: "uppercase",
-                letterSpacing: 3,
               }}
             >
-              Market Value
+              {displayName}
             </div>
             <div
               style={{
                 display: "flex",
                 fontFamily: "Archivo Black",
-                fontSize: 52,
-                color: "#ffffff",
-                marginTop: 4,
-                textAlign: "right",
+                fontSize: 16,
+                color: C.green,
+                borderWidth: 2,
+                borderStyle: "solid",
+                borderColor: C.green,
+                borderRadius: 999,
+                padding: "3px 14px",
+                marginLeft: 16,
               }}
             >
-              {player.marketValueFormatted}
+              {tier}
             </div>
-            <svg width={280} height={72} style={{ marginTop: 8 }}>
-              <path d={sparkline.area} fill="rgba(0,200,83,0.22)" />
-              <path d={sparkline.line} stroke={C.green} strokeWidth={4} fill="none" />
-            </svg>
+          </div>
+          {displayName !== `@${player.login}` && (
+            <div style={{ display: "flex", fontSize: 24, color: C.green, marginTop: 8 }}>@{player.login}</div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", marginTop: 14 }}>
+            <LanguageBadge language={player.provider} size={30} />
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground, marginLeft: 10, textTransform: "uppercase" }}>
+              {player.provider}
+            </div>
+            <div style={{ display: "flex", fontSize: 20, color: C.border, marginLeft: 16, marginRight: 16 }}>|</div>
+            <FlagBadge iso2={player.nationalityIso2} size={26} />
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 22, color: C.foreground, marginLeft: 10 }}>
+              {abbreviatePosition(player.position.main)}
+            </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", flex: 1 }} />
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            borderTopWidth: 1,
-            borderTopStyle: "solid",
-            borderTopColor: C.border,
-            paddingTop: 28,
-          }}
-        >
-          {trophies.map((trophy) => (
-            <div key={trophy.id} style={{ display: "flex", flexDirection: "row", alignItems: "center", flex: 1 }}>
-              <TrophySilhouette id={trophy.id} size={30} />
-              <div style={{ display: "flex", fontSize: 16, color: C.muted, marginLeft: 10 }}>{trophy.name}</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Barlow Condensed",
+              fontSize: 18,
+              color: C.muted,
+              textTransform: "uppercase",
+              letterSpacing: 3,
+            }}
+          >
+            Value
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", marginTop: 4 }}>
+            <div style={{ display: "flex", fontFamily: "Archivo Black", fontSize: 56, color: C.green }}>
+              {player.marketValueFormatted}
             </div>
-          ))}
+            {trend && trend.direction !== "flat" && (
+              <div style={{ display: "flex", marginLeft: 10 }}>
+                <OgTrendArrow direction={trend.direction} size={20} color={trend.direction === "up" ? C.green : C.red} />
+              </div>
+            )}
+          </div>
         </div>
 
         <div
           style={{
             position: "absolute",
             bottom: 24,
-            right: 56,
+            right: 64,
             display: "flex",
-            fontSize: 18,
+            fontSize: 16,
             color: C.muted,
           }}
         >
-          transfergit.app/{player.login}
+          {siteHost}/{player.login}
         </div>
       </div>
     ),

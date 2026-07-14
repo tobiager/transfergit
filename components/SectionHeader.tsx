@@ -1,8 +1,16 @@
-export function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
+export function SectionHeader({
+  title,
+  right,
+  titleClassName = "text-foreground",
+}: {
+  title: string;
+  right?: React.ReactNode;
+  titleClassName?: string;
+}) {
   return (
-    <div className="flex items-center justify-between gap-2 bg-tm-blue-deep px-4 py-2">
-      <h2 className="font-table text-lg font-bold uppercase tracking-wide text-white">{title}</h2>
-      {right}
+    <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+      <h2 className={`font-table text-lg font-bold uppercase tracking-wide ${titleClassName}`}>{title}</h2>
+      {right && <span className="font-mono text-xs uppercase tracking-wide text-muted">{right}</span>}
     </div>
   );
 }

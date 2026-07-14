@@ -52,38 +52,9 @@ export function buildChartGeometry(
   return { line, area, points, recordIndex };
 }
 
-// Small-sparkline helper (compact/social cards): just the line + area, no
-// point markers.
+// Small-sparkline helper (MarketValueBox on the profile page): just the
+// line + area, no point markers.
 export function buildSparklinePaths(history: MarketValuePoint[], width: number, height: number): SparklinePaths {
   const { line, area } = buildChartGeometry(history, width, height, 0);
   return { line, area };
-}
-
-export interface YAxisTick {
-  y: number;
-  value: number;
-}
-
-// Evenly spaced horizontal gridline positions for the full OG card's chart,
-// matching the same min/max/padding math as buildChartGeometry so the ticks
-// line up with the drawn curve.
-export function buildYAxisTicks(
-  history: MarketValuePoint[],
-  height: number,
-  padding = 0,
-  tickCount = 4
-): YAxisTick[] {
-  if (history.length === 0) return [];
-
-  const values = history.map((p) => p.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const innerHeight = height - padding * 2;
-
-  return Array.from({ length: tickCount + 1 }, (_, i) => {
-    const value = min + (range * i) / tickCount;
-    const y = padding + innerHeight - ((value - min) / range) * innerHeight;
-    return { y, value };
-  });
 }

@@ -2,7 +2,7 @@ export function PlayerSkeleton() {
   return (
     <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-8 md:grid-cols-3 md:px-6">
       <div className="space-y-6 md:col-span-2">
-        <div className="h-48 rounded-xl border border-border bg-surface p-6">
+        <div className="h-48 p-6">
           <div className="flex gap-6">
             <div className="shimmer h-28 w-28 rounded-lg md:h-36 md:w-36" />
             <div className="flex-1 space-y-3">
