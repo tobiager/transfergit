@@ -45,9 +45,7 @@ That's it. Your README now has a transfer fee.
   <summary><b>⚽ View TransferGit profile and market statistics (Click to expand)</b></summary>
   <br>
   <p align="center">
-    <a href="https://transfergit.com/torvalds">
-      <img src="https://transfergit.com/api/og/torvalds/readme" alt="TransferGit README - Full" width="1000" />
-    </a>
+    <a href="https://transfergit.com/torvalds"><img src="public/fan-cards/transfergit-torvalds-readme.png" width="600" alt="Transfergit"></a>
   </p>
 </details>
 
