@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Copy, Download, Link2, Share2, X as XIcon } from "lucide-react";
 import { TiltCard } from "./TiltCard";
+import { getSiteHost, getSiteUrl } from "@/lib/site-url";
 
 function XLogo({ size = 18 }: { size?: number }) {
   return (
@@ -52,19 +53,16 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
     story: false,
     social: false,
   });
-  const [origin, setOrigin] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.location after mount so SSR/client markup match; not a state sync.
-    setOrigin(window.location.origin);
-  }, []);
-
   function host(): string {
-    return origin.replace(/^https?:\/\//, "");
+    return getSiteHost();
   }
 
   function profileUrl(): string {
-    return `${origin}/${login}`;
+    return `${getSiteUrl()}/${login}`;
+  }
+
+  function shareUrl(): string {
+    return `${profileUrl()}?card=${variant}`;
   }
 
   function imagePath(v: Variant): string {
@@ -78,7 +76,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
 
   async function copyMarkdown() {
     const meta = VARIANT_META[variant];
-    const markdown = `<p align="center">\n  <a href="${profileUrl()}">\n    <img src="${origin}${imagePath(variant)}" alt="TransferGit ${meta.label}" width="${meta.readmeWidth}" />\n  </a>\n</p>`;
+    const markdown = `<p align="center">\n  <a href="${profileUrl()}">\n    <img src="${getSiteUrl()}${imagePath(variant)}" alt="TransferGit ${meta.label}" width="${meta.readmeWidth}" />\n  </a>\n</p>`;
     try {
       await navigator.clipboard.writeText(markdown);
       setCopiedAction("markdown");
@@ -105,12 +103,12 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   }
 
   function shareToX() {
-    const params = new URLSearchParams({ text: shareText(), url: profileUrl() });
+    const params = new URLSearchParams({ text: shareText(), url: shareUrl() });
     window.open(`https://twitter.com/intent/tweet?${params}`, "_blank", "noopener,noreferrer");
   }
 
   function shareToLinkedIn() {
-    const params = new URLSearchParams({ url: profileUrl() });
+    const params = new URLSearchParams({ url: shareUrl() });
     window.open(`https://www.linkedin.com/sharing/share-offsite/?${params}`, "_blank", "noopener,noreferrer");
   }
 

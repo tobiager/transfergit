@@ -22,16 +22,25 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export const revalidate = 86400;
 
+// Must match the OG route folders under app/api/og/[username]/ and the
+// export panel's variant keys, so a shared link's preview image matches
+// whichever card format the sharer had selected.
+const OG_VARIANTS = ["readme", "card", "portrait", "story", "social"] as const;
+type OgVariant = (typeof OG_VARIANTS)[number];
+
 interface PageProps {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ card?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { username } = await params;
+  const { card } = await searchParams;
+  const variant: OgVariant = OG_VARIANTS.includes(card as OgVariant) ? (card as OgVariant) : "social";
   const siteUrl = getSiteUrl();
   const title = `${username} — Player Card | Transfergit`;
   const description = `${username}'s GitHub profile valued like a football player: market value, position, seasons and transfers.`;
-  const ogImage = `${siteUrl}/api/og/${username}/social`;
+  const ogImage = `${siteUrl}/api/og/${username}/${variant}`;
 
   return {
     title,
