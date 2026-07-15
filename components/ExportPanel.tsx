@@ -41,18 +41,16 @@ const VARIANT_META: Record<
   social: { path: "/social", width: 1200, height: 630, readmeWidth: 800, label: "Banner", ratio: "16:9" },
 };
 
+type ReadmeFormat = "svg" | "png";
+
 export function ExportPanel({ login, marketValueFormatted }: { login: string; marketValueFormatted: string }) {
   const [variant, setVariant] = useState<Variant>("readme");
+  // Only meaningful for the "readme" variant — the other 4 formats stay PNG.
+  const [readmeFormat, setReadmeFormat] = useState<ReadmeFormat>("svg");
   const [toast, setToast] = useState<string | null>(null);
   const [copiedAction, setCopiedAction] = useState<"link" | "markdown" | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const [loaded, setLoaded] = useState<Record<Variant, boolean>>({
-    readme: false,
-    card: false,
-    portrait: false,
-    story: false,
-    social: false,
-  });
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   function host(): string {
     return getSiteHost();
   }
@@ -65,7 +63,16 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
     return `${profileUrl()}?card=${variant}`;
   }
 
+  const isSvgReadme = variant === "readme" && readmeFormat === "svg";
+
   function imagePath(v: Variant): string {
+    if (v === "readme" && readmeFormat === "svg") {
+      return `/api/svg/${login}/readme`;
+    }
+    return `/api/og/${login}${VARIANT_META[v].path}`;
+  }
+
+  function pngPath(v: Variant): string {
     return `/api/og/${login}${VARIANT_META[v].path}`;
   }
 
@@ -76,7 +83,9 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
 
   async function copyMarkdown() {
     const meta = VARIANT_META[variant];
-    const markdown = `<p align="center">\n  <a href="${profileUrl()}">\n    <img src="${getSiteUrl()}${imagePath(variant)}" alt="TransferGit ${meta.label}" width="${meta.readmeWidth}" />\n  </a>\n</p>`;
+    const markdown = isSvgReadme
+      ? `[![Transfergit card](${getSiteUrl()}${imagePath(variant)})](${profileUrl()})`
+      : `<p align="center">\n  <a href="${profileUrl()}">\n    <img src="${getSiteUrl()}${pngPath(variant)}" alt="TransferGit ${meta.label}" width="${meta.readmeWidth}" />\n  </a>\n</p>`;
     try {
       await navigator.clipboard.writeText(markdown);
       setCopiedAction("markdown");
@@ -114,7 +123,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
 
   function downloadPng() {
     const a = document.createElement("a");
-    a.href = imagePath(variant);
+    a.href = pngPath(variant);
     a.download = `transfergit-${login}-${variant}.png`;
     document.body.appendChild(a);
     a.click();
@@ -122,6 +131,7 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
   }
 
   const meta = VARIANT_META[variant];
+  const previewKey = `${variant}-${readmeFormat}`;
 
   return (
     <div data-reveal="share" className="relative overflow-hidden rounded-xl tm-card tm-card-green">
@@ -137,15 +147,15 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
             className="glow-green-border relative overflow-hidden rounded-2xl border bg-surface"
             style={{ width: "100%", maxWidth: 340, height: 540 }}
           >
-            {!loaded[variant] && <div className="shimmer absolute inset-0" aria-hidden />}
-            {/* eslint-disable-next-line @next/next/no-img-element -- this is the real, unoptimized OG endpoint image (preview = exact export), next/image's optimizer adds nothing here. */}
+            {loadedKey !== previewKey && <div className="shimmer absolute inset-0" aria-hidden />}
+            {/* eslint-disable-next-line @next/next/no-img-element -- this is the real, unoptimized OG/SVG endpoint image (preview = exact export), next/image's optimizer adds nothing here. */}
             <img
-              key={variant}
+              key={previewKey}
               src={imagePath(variant)}
               alt={`Preview of ${login}'s ${meta.label} card`}
-              onLoad={() => setLoaded((prev) => ({ ...prev, [variant]: true }))}
+              onLoad={() => setLoadedKey(previewKey)}
               className={`h-full w-full object-contain transition-opacity duration-300 ${
-                loaded[variant] ? "opacity-100" : "opacity-0"
+                loadedKey === previewKey ? "opacity-100" : "opacity-0"
               }`}
             />
           </TiltCard>
@@ -179,6 +189,36 @@ export function ExportPanel({ login, marketValueFormatted }: { login: string; ma
               </button>
             ))}
           </div>
+
+          {variant === "readme" && (
+            <div className="mt-3">
+              <div className="inline-flex rounded-full border border-border p-0.5 font-mono text-xs">
+                <button
+                  type="button"
+                  onClick={() => setReadmeFormat("svg")}
+                  aria-pressed={readmeFormat === "svg"}
+                  className={`rounded-full px-3 py-1 transition ${
+                    readmeFormat === "svg" ? "bg-value-green text-pitch" : "text-muted hover:text-foreground"
+                  }`}
+                >
+                  Dynamic SVG
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReadmeFormat("png")}
+                  aria-pressed={readmeFormat === "png"}
+                  className={`rounded-full px-3 py-1 transition ${
+                    readmeFormat === "png" ? "bg-value-green text-pitch" : "text-muted hover:text-foreground"
+                  }`}
+                >
+                  Static PNG
+                </button>
+              </div>
+              {readmeFormat === "svg" && (
+                <p className="mt-1.5 text-xs text-muted">Updates automatically · animated in your README</p>
+              )}
+            </div>
+          )}
 
           <div className="mt-6 grid grid-cols-2 gap-2">
             <button

@@ -50,6 +50,15 @@ export function languageColor(language: string | null | undefined): string {
   return LANGUAGE_ICONS[language] ? `#${LANGUAGE_ICONS[language].hex}` : DEFAULT_COLOR;
 }
 
+// Headless lookup so non-JSX renderers (the plain-string SVG card generator
+// in lib/svg-card) can draw the same brand mark without going through the
+// React component below.
+export function getLanguageIcon(language: string | null | undefined): { path: string; color: string } | null {
+  if (!language) return null;
+  const icon = LANGUAGE_ICONS[language];
+  return icon ? { path: icon.path, color: `#${icon.hex}` } : null;
+}
+
 export function LanguageBadge({ language, size = 72 }: { language: string | null | undefined; size?: number }) {
   const icon = language ? LANGUAGE_ICONS[language] : undefined;
   const color = icon ? `#${icon.hex}` : DEFAULT_COLOR;

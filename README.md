@@ -24,10 +24,10 @@ Market value, transfer history, injuries — the whole file.
 2. Hit **Copy Markdown** and paste it into your GitHub profile README.
 
 ```md
-[![Transfergit card](https://transfergit.com/api/og/YOUR_USERNAME/readme)](https://transfergit.com/YOUR_USERNAME)
+[![Transfergit card](https://transfergit.com/api/svg/YOUR_USERNAME/readme)](https://transfergit.com/YOUR_USERNAME)
 ```
 
-That's it. Your README now has a transfer fee.
+That's it. Your README now has a transfer fee — the card is a live SVG, so it updates and animates on its own, no re-commit needed.
 
 ## What you get
 
