@@ -1,5 +1,5 @@
 import type { GithubProfile, MarketValuePoint } from "./types";
-import { calculateAgeYears, formatMarketValue } from "./format";
+import { calculateAgeYears, formatMarketValue } from "./format.ts";
 
 // -----------------------------------------------------------------------
 // Market value formula (easy to tune: everything is a constant here).
