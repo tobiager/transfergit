@@ -39,7 +39,8 @@ export function assignRoles(
     .map((player, i) => ({ ...player, position: slots[i] }));
   const bench = ranked.slice(slots.length);
 
-  const mvp = ranked.reduce((best, p) => (p.marketValue > best.marketValue ? p : best), ranked[0]);
+  // Pending valuations (marketValue null) never outrank a known value.
+  const mvp = ranked.reduce((best, p) => ((p.marketValue ?? -1) > (best.marketValue ?? -1) ? p : best), ranked[0]);
   const captain =
     ranked.find((p) => p.login.toLowerCase() === repoOwner.toLowerCase()) ?? ranked[0];
 

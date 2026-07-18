@@ -137,3 +137,41 @@ test("getRepoSquad values each player like their individual profile and sums the
   assert.equal(squad.starters.length + squad.bench.length, 3);
   assert.equal(squad.captain.login, "alice");
 });
+
+test("only the top 30 contributors are valued — positions 31+ are unvalued reserves at zero extra cost", async (t) => {
+  t.after(() => {
+    process.env.GITHUB_TOKEN = ORIGINAL_TOKEN;
+  });
+  process.env.GITHUB_TOKEN = "test-token";
+
+  const fixtures: Fixture[] = Array.from({ length: 35 }, (_, i) => ({
+    login: `user${i}`,
+    repoCommits: 100 - i,
+    followers: 1,
+    stars: 1,
+    profileCommits: 1,
+  }));
+  mockGithub(fixtures);
+  const mockedFetch = globalThis.fetch;
+  const graphqlLogins = new Set<string>();
+  (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
+    if (typeof url === "string" && url.includes("/graphql")) {
+      const { variables } = JSON.parse(init!.body as string) as { variables: { login: string } };
+      graphqlLogins.add(variables.login);
+    }
+    return mockedFetch(url, init);
+  }) as typeof fetch;
+
+  const squad = await getRepoSquad("acme", "widgets");
+
+  assert.equal(squad.starters.length + squad.bench.length, 30, "tier 1 is capped at 30");
+  assert.equal(squad.reserves.length, 5, "positions 31-35 become reserves");
+  assert.deepEqual(
+    squad.reserves.map((r) => r.login),
+    fixtures.slice(30).map((f) => f.login)
+  );
+  for (const reserve of squad.reserves) {
+    assert.ok(!graphqlLogins.has(reserve.login), `reserve ${reserve.login} must never hit the GraphQL API`);
+    assert.ok(!("marketValue" in reserve), "reserves carry no valuation fields, just login/avatarUrl/commits");
+  }
+});

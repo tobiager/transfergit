@@ -6,7 +6,11 @@ export class RepoNotFoundError extends Error {}
 export class NotEnoughPlayersError extends Error {}
 
 const MIN_HUMAN_CONTRIBUTORS = 3;
-const MAX_SQUAD_SIZE = 30;
+// 100 is GitHub's own per_page ceiling for this endpoint — still one REST
+// request. Only the first TIER1_SIZE (see lib/squad/index.ts) get a full
+// valuation; the rest are exposed as unvalued reserves at zero extra cost
+// since login/avatar/commits already come back in this same response.
+const MAX_ROSTER_SIZE = 100;
 
 interface RestContributor {
   login: string;
@@ -19,12 +23,13 @@ function isBot(c: RestContributor): boolean {
   return c.type === "Bot" || c.login.endsWith("[bot]");
 }
 
-// Top 30 human contributors of a repo, ranked by commits. REST is used
+// Top 100 human contributors of a repo, ranked by commits. REST is used
 // because GitHub's GraphQL API doesn't expose per-repo contributor stats.
 export async function fetchTopContributors(owner: string, repo: string): Promise<Contributor[]> {
+  const start = Date.now();
   const token = process.env.GITHUB_TOKEN;
   const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${MAX_SQUAD_SIZE}&anon=false`,
+    `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${MAX_ROSTER_SIZE}&anon=false`,
     {
       headers: {
         Accept: "application/vnd.github+json",
@@ -56,5 +61,6 @@ export async function fetchTopContributors(owner: string, repo: string): Promise
     );
   }
 
+  console.warn(`[squad] timing: contributors ${Date.now() - start}ms (${humans.length} humans)`);
   return humans;
 }

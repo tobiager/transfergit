@@ -4,7 +4,58 @@ import type { ContributionDay, GithubOrg, GithubProfile, GithubRepo, WorldCupRep
 const GITHUB_GRAPHQL_ENDPOINT = "https://api.github.com/graphql";
 
 class GithubUserNotFoundError extends Error {}
-export class GithubRateLimitError extends Error {}
+
+export class GithubRateLimitError extends Error {
+  // Seconds to wait before retrying, from GitHub's Retry-After header — null
+  // when the header wasn't sent (caller should fall back to its own backoff).
+  readonly retryAfterSeconds: number | null;
+
+  constructor(message: string, retryAfterSeconds: number | null = null) {
+    super(message);
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+// A GraphQL query that returned HTTP 200 but whose cost exceeded GitHub's
+// per-request resource budget (errors[].type === "RESOURCE_LIMITS_EXCEEDED").
+// Distinct from GithubRateLimitError: this is NOT the hourly rate limit
+// (x-ratelimit-remaining stays high) and it is NOT transient — the exact
+// same query costs the exact same amount every time, so retrying it is
+// pointless. See lib/squad/valuation.ts for how callers use this to skip
+// straight to a cached fallback instead of wasting a retry.
+export class GithubQueryTooExpensiveError extends Error {}
+
+export interface GithubRateLimitStatus {
+  remaining: number;
+  limit: number;
+  resetAtEpochSeconds: number | null;
+}
+
+// Updated on every GraphQL response (success or failure) so callers can read
+// "how much of the hourly budget is left" without a dedicated API call.
+// Module-scoped and process-local by design — this is a live signal for the
+// current invocation's fan-out (lib/squad/valuation.ts's budget guard), not
+// a durable record; it doesn't need to (and isn't expected to) survive
+// across serverless invocations the way the actual response cache does.
+let lastRateLimitStatus: GithubRateLimitStatus | null = null;
+
+export function getLastGithubRateLimitStatus(): GithubRateLimitStatus | null {
+  return lastRateLimitStatus;
+}
+
+function captureRateLimitHeaders(res: Response): void {
+  // res.headers is absent on the bare mock Response objects the test suite
+  // builds by hand — degrade to "no signal" rather than throw.
+  const remaining = res.headers?.get("x-ratelimit-remaining") ?? null;
+  const limit = res.headers?.get("x-ratelimit-limit") ?? null;
+  if (remaining === null || limit === null) return;
+  const reset = res.headers.get("x-ratelimit-reset");
+  lastRateLimitStatus = {
+    remaining: Number(remaining),
+    limit: Number(limit),
+    resetAtEpochSeconds: reset ? Number(reset) : null,
+  };
+}
 
 // GitHub usernames: alphanumeric + single hyphens, no leading/trailing
 // hyphen, max 39 chars. Rejecting anything else upfront keeps malformed
@@ -33,8 +84,11 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
     next: { revalidate: 86400 },
   });
 
+  captureRateLimitHeaders(res);
+
   if (res.status === 403 || res.status === 429) {
-    throw new GithubRateLimitError("GitHub API rate limit exceeded");
+    const retryAfter = res.headers?.get("retry-after") ?? null;
+    throw new GithubRateLimitError("GitHub API rate limit exceeded", retryAfter ? Number(retryAfter) : null);
   }
   if (!res.ok) {
     throw new Error(`GitHub GraphQL responded ${res.status}: ${await res.text()}`);
@@ -46,10 +100,32 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
     throw new GithubUserNotFoundError();
   }
   if (json.errors) {
+    // A query can return HTTP 200 with a "successful" envelope that's still
+    // all errors — e.g. a long-tenured/highly-active account's profile query
+    // (many contributionsCollection year aliases + a wide external-PR search)
+    // tripping GitHub's per-request cost limit. Diagnosed via temporary
+    // logging: this is what was silently turning squad captains' valuations
+    // into "—" — not rate limiting (x-ratelimit-remaining stayed >95%).
+    const errorTypes = new Set((json.errors as { type?: string }[]).map((e) => e.type));
+    if (errorTypes.size === 1 && errorTypes.has("RESOURCE_LIMITS_EXCEEDED")) {
+      throw new GithubQueryTooExpensiveError("GitHub GraphQL query exceeded the per-request resource limit");
+    }
     throw new Error(`GitHub GraphQL error: ${JSON.stringify(json.errors)}`);
   }
 
   return json.data as T;
+}
+
+// Rounds "now" to the start of the current UTC day so repeated profile
+// requests within the 24h fetch-cache window (`next: { revalidate: 86400 }`)
+// produce a byte-identical query/body and actually land the same Data Cache
+// key. A live millisecond timestamp here busts the cache on every call,
+// which is why squad valuations were refetching (and rate-limiting) instead
+// of being served from cache.
+function cacheStableNow(): Date {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
 }
 
 // The contributionsCollection API only accepts ranges of at most one year,
@@ -58,7 +134,7 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
 function buildYearAlias(year: number, isCurrentYear: boolean) {
   const from = `${year}-01-01T00:00:00Z`;
   const to = isCurrentYear
-    ? new Date().toISOString()
+    ? cacheStableNow().toISOString()
     : `${year + 1}-01-01T00:00:00Z`;
 
   return `
@@ -207,7 +283,7 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       yearAliases.push(buildYearAlias(year, year === currentYear));
     }
 
-    const now = new Date();
+    const now = cacheStableNow();
     const oneYearAgo = new Date(now);
     oneYearAgo.setFullYear(now.getFullYear() - 1);
 

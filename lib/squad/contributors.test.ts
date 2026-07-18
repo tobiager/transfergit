@@ -41,3 +41,33 @@ test("throws NotEnoughPlayersError with fewer than 3 humans", async () => {
   ]);
   await assert.rejects(() => fetchTopContributors("owner", "repo"), NotEnoughPlayersError);
 });
+
+test("requests per_page=100 (still one REST call) and returns a 100-person roster with bots filtered", async () => {
+  const humans = Array.from({ length: 90 }, (_, i) => ({
+    login: `human${i}`,
+    avatar_url: "x",
+    contributions: 100 - i,
+    type: "User" as const,
+  }));
+  const bots = Array.from({ length: 15 }, (_, i) => ({
+    login: `renovate${i}[bot]`,
+    avatar_url: "x",
+    contributions: 50,
+    type: "Bot" as const,
+  }));
+
+  let requestedUrl = "";
+  let requestCount = 0;
+  (globalThis as { fetch: typeof fetch }).fetch = (async (url: string) => {
+    requestCount++;
+    requestedUrl = url;
+    return { ok: true, status: 200, json: async () => [...humans, ...bots], text: async () => "" } as Response;
+  }) as typeof fetch;
+
+  const contributors = await fetchTopContributors("owner", "repo");
+
+  assert.equal(requestCount, 1, "the whole 100-person roster comes from a single REST call");
+  assert.match(requestedUrl, /per_page=100/);
+  assert.equal(contributors.length, 90, "all 90 humans come back, bots filtered out");
+  assert.ok(contributors.every((c) => !c.login.includes("[bot]")));
+});
