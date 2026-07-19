@@ -47,14 +47,24 @@ const LANDSCAPE_GAP = 6;
 // chip so that's actually achievable on this canvas's short 630px height;
 // see lib/squad/pitchLayout.test.ts's landscape collision test, which this
 // was sized against together with the zigzag offset (pitchLayout.ts).
-const LANDSCAPE_CHIP_W = 70;
-const LANDSCAPE_AVATAR_SIZE = 42;
+// Wider than tall on purpose: the horizontal gap between the def/mid/fwd
+// lines (~25% of the pitch width) has room to spare, so widening the chip
+// buys the nameplate enough width to show full/near-full usernames instead of
+// "Laks…7089", without growing the chip's HEIGHT — the tight axis, where a
+// 4-member line (back four) must stack inside the 630px canvas. Font scale is
+// nudged up only slightly for the same reason (height stays ~constant).
+const LANDSCAPE_CHIP_W = 130;
+const LANDSCAPE_AVATAR_SIZE = 50;
 // The chip is taller than it is wide (tag + avatar + nameplate stacked) —
 // vertical clamping against LANDSCAPE_CHIP_W alone let the nameplate of the
 // bottom-most chip in a line overflow past the pitch box into the footer.
-const LANDSCAPE_CHIP_H = 100;
+// Height stays close to the old value on purpose: the tight axis is the
+// vertical one (a back four stacking on the 630px canvas), so the extra room
+// for bigger avatars + fuller names is spent on WIDTH (plenty of horizontal
+// gap between lines), not height.
+const LANDSCAPE_CHIP_H = 104;
 const LANDSCAPE_EDGE_MARGIN = 3;
-const LANDSCAPE_FONT_SCALE = 0.55;
+const LANDSCAPE_FONT_SCALE = 0.64;
 
 const FULL_SQUAD_PAD = 40;
 const FULL_SQUAD_PITCH_CHIP_W = 108;
@@ -235,23 +245,30 @@ function AvatarCircle({
   );
 }
 
-function CaptainBadge() {
+// Badges scale with the chip (via `scale`, the chip's fontScale) so they stay
+// proportional to the avatar. On the small landscape avatar the old fixed 26px
+// badges were oversized enough that the captain (top-right) and MVP
+// (bottom-right) circles collided into one blob and the MVP star read as
+// missing — scaling them down to the avatar keeps both clearly visible.
+function CaptainBadge({ scale = 1 }: { scale?: number }) {
+  const size = Math.round(26 * scale);
+  const offset = Math.round(-3 * scale);
   return (
     <div
       style={{
         display: "flex",
         position: "absolute",
-        top: -4,
-        right: -4,
-        width: 26,
-        height: 26,
-        borderRadius: 13,
+        top: offset,
+        right: offset,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
         backgroundColor: "#4d9fff",
         color: "#060a12",
         alignItems: "center",
         justifyContent: "center",
         fontFamily: "Archivo Black",
-        fontSize: 13,
+        fontSize: Math.round(13 * scale),
       }}
     >
       C
@@ -259,26 +276,32 @@ function CaptainBadge() {
   );
 }
 
-function MvpBadge({ theme }: { theme: SquadTheme }) {
+function MvpBadge({ theme, scale = 1 }: { theme: SquadTheme; scale?: number }) {
+  const size = Math.round(26 * scale);
+  const offset = Math.round(-3 * scale);
+  const star = Math.round(size * 0.66);
   return (
     <div
       style={{
         display: "flex",
         position: "absolute",
-        bottom: -4,
-        right: -4,
-        width: 26,
-        height: 26,
-        borderRadius: 13,
+        bottom: offset,
+        right: offset,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
         backgroundColor: theme.gold,
-        color: "#060a12",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "Archivo Black",
-        fontSize: 14,
       }}
     >
-      ★
+      {/* Drawn as an SVG path, NOT a "★" text glyph: Satori only has the
+          fonts we load (Archivo/Archivo Black/…), none of which include the
+          star glyph, so the character rendered as a tofu box and the MVP mark
+          read as missing. */}
+      <svg width={star} height={star} viewBox="0 0 24 24" fill="#060a12">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" />
+      </svg>
     </div>
   );
 }
@@ -414,8 +437,8 @@ function SquadChip({
       <PositionTag role={player.position.role} theme={theme} fontScale={fontScale} />
       <div style={{ display: "flex", position: "relative", marginTop: 4 }}>
         <AvatarCircle avatarDataUri={avatarDataUri} size={avatarSize} borderColor={ringColor} theme={theme} login={player.login} />
-        {isCaptain && <CaptainBadge />}
-        {isMvp && <MvpBadge theme={theme} />}
+        {isCaptain && <CaptainBadge scale={fontScale} />}
+        {isMvp && <MvpBadge theme={theme} scale={fontScale} />}
       </div>
       <Nameplate player={player} theme={theme} chipWidth={chipWidth} fontScale={fontScale} />
     </div>
@@ -477,7 +500,6 @@ function LandscapePitchChip({
   avatarDataUri,
   pitchW,
   pitchH,
-  zigzagIndex,
 }: {
   player: Starter;
   theme: SquadTheme;
@@ -486,9 +508,8 @@ function LandscapePitchChip({
   avatarDataUri: string | null;
   pitchW: number;
   pitchH: number;
-  zigzagIndex: number;
 }) {
-  const pos = pitchPositionHorizontal(player.position.x, player.position.y, zigzagIndex);
+  const pos = pitchPositionHorizontal(player.position.x, player.position.y);
   const left = clamp(
     (pos.left / 100) * pitchW - LANDSCAPE_CHIP_W / 2,
     LANDSCAPE_EDGE_MARGIN,
@@ -737,7 +758,7 @@ async function renderLandscape(
         }}
       >
         <LandscapePitchLines color={theme.pitchLine} width={pitchW} height={pitchH} />
-        {squad.starters.map((player, i) => (
+        {squad.starters.map((player) => (
           <LandscapePitchChip
             key={player.login}
             player={player}
@@ -745,7 +766,6 @@ async function renderLandscape(
             isCaptain={player.login === squad.captain.login}
             isMvp={player.login === squad.mvp.login}
             avatarDataUri={avatarMap.get(player.avatarUrl) ?? null}
-            zigzagIndex={i}
             pitchW={pitchW}
             pitchH={pitchH}
           />

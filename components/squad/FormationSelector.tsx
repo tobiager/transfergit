@@ -22,12 +22,12 @@ export function FormationSelector({
   const isCustom = current === CUSTOM_FORMATION;
 
   return (
-    <div data-reveal className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+    <div data-reveal className="flex flex-wrap items-center justify-center gap-2">
       {options.map((name) => (
         <Link
           key={name}
           href={`/squad/${owner}/${repo}?formation=${name}`}
-          className={`rounded-full border px-4 py-1.5 font-mono text-sm transition ${
+          className={`rounded-full border px-3 py-1 font-mono text-xs transition ${
             name === current
               ? "glow-green-border border-value-green bg-value-green/10 text-value-green"
               : "border-border bg-surface text-muted hover:border-value-green/50 hover:text-foreground"
@@ -38,7 +38,7 @@ export function FormationSelector({
       ))}
 
       <span
-        className={`rounded-full border px-4 py-1.5 font-mono text-sm ${
+        className={`rounded-full border px-3 py-1 font-mono text-xs ${
           isCustom
             ? "glow-green-border border-value-green bg-value-green/10 text-value-green"
             : "border-dashed border-border text-muted"
@@ -50,9 +50,9 @@ export function FormationSelector({
       {isCustom && (
         <Link
           href={resetHref}
-          className="rounded-full border border-border bg-surface px-4 py-1.5 font-mono text-sm text-muted transition hover:border-value-green/50 hover:text-foreground"
+          className="rounded-full border border-border bg-surface px-3 py-1 font-mono text-xs text-muted transition hover:border-value-green/50 hover:text-foreground"
         >
-          Reset formation
+          Reset
         </Link>
       )}
     </div>

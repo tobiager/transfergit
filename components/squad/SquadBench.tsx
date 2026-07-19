@@ -1,6 +1,9 @@
 import type { SquadPlayer } from "@/lib/squad";
 import { PlayerChip } from "./PlayerChip";
 
+// Compact one-column list for the match-center sidebar (and the mobile
+// "Squad" tab): one row per player — avatar, username, value + commits on
+// a single line. Click still opens the player popover.
 export function SquadBench({
   bench,
   captainLogin,
@@ -14,18 +17,16 @@ export function SquadBench({
 
   return (
     <section data-reveal>
-      <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-muted">Bench · {bench.length}</h2>
-      {/* Mobile: horizontal scroll-snap strip. lg+: a plain 2-column grid. */}
-      <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:px-0 lg:pb-0">
+      <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted">Bench · {bench.length}</h2>
+      <div className="flex flex-col gap-1.5">
         {bench.map((player) => (
-          <div key={player.login} data-reveal-row className="w-36 shrink-0 snap-start lg:w-auto">
-            <PlayerChip
-              player={player}
-              variant="bench"
-              isCaptain={player.login === captainLogin}
-              isMvp={player.login === mvpLogin}
-            />
-          </div>
+          <PlayerChip
+            key={player.login}
+            player={player}
+            variant="row"
+            isCaptain={player.login === captainLogin}
+            isMvp={player.login === mvpLogin}
+          />
         ))}
       </div>
     </section>

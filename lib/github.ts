@@ -100,12 +100,29 @@ async function githubGraphQL<T>(query: string, variables: Record<string, unknown
     throw new GithubUserNotFoundError();
   }
   if (json.errors) {
-    // A query can return HTTP 200 with a "successful" envelope that's still
-    // all errors — e.g. a long-tenured/highly-active account's profile query
-    // (many contributionsCollection year aliases + a wide external-PR search)
-    // tripping GitHub's per-request cost limit. Diagnosed via temporary
-    // logging: this is what was silently turning squad captains' valuations
-    // into "—" — not rate limiting (x-ratelimit-remaining stayed >95%).
+    // GitHub returns HTTP 200 with BOTH an errors[] array AND (often) a
+    // partially-resolved data object: some aliases succeeded, others tripped
+    // GitHub's per-request resource limit (RESOURCE_LIMITS_EXCEEDED — NOT the
+    // hourly rate limit; x-ratelimit-remaining stays high). Diagnosed against
+    // real squad users (dhedhialy, ousamabenyounes, HannesOberreiter, …): the
+    // priciest half of a query (external-PR search nodes, per-year
+    // contributionsCollection aliases) fails while the rest resolves.
+    //
+    // Salvage the partial data whenever the core `user` object still
+    // resolved — the caller fills any missing aliases with safe defaults
+    // (see fetchGithubProfile) — instead of discarding a fully usable
+    // profile and forcing a "—". Only when there's no usable `user` at all do
+    // we classify the failure for the caller's fallback (REST lookup, then
+    // pending).
+    const data = json.data as { user?: unknown } | null | undefined;
+    if (data && data.user != null) {
+      console.warn(
+        `[github] partial GraphQL response salvaged (user resolved): ${json.errors.length} alias error(s), ` +
+          `first type=${(json.errors as { type?: string }[])[0]?.type ?? "unknown"}`
+      );
+      return json.data as T;
+    }
+
     const errorTypes = new Set((json.errors as { type?: string }[]).map((e) => e.type));
     if (errorTypes.size === 1 && errorTypes.has("RESOURCE_LIMITS_EXCEEDED")) {
       throw new GithubQueryTooExpensiveError("GitHub GraphQL query exceeded the per-request resource limit");
@@ -175,12 +192,18 @@ interface SearchIssueCount {
 }
 
 interface PullRequestSearchResult extends SearchIssueCount {
-  nodes: Array<{ repository?: { name: string; stargazerCount: number }; mergedAt?: string }>;
+  // Nullable: in a salvaged partial response the search nodes can fail while
+  // the outer count resolves (or vice versa).
+  nodes: Array<{ repository?: { name: string; stargazerCount: number } | null; mergedAt?: string }> | null;
 }
 
+// Every field GitHub can null out on its own in a partial (200 + errors[])
+// response is typed nullable here — the salvage path in githubGraphQL keeps
+// such responses when `user` resolved, and fetchGithubProfile defaults each
+// missing piece. `user` itself is only kept non-null past the salvage gate.
 interface FullProfileResponse {
-  externalMergedPRs: PullRequestSearchResult;
-  closedIssues: SearchIssueCount;
+  externalMergedPRs: PullRequestSearchResult | null;
+  closedIssues: SearchIssueCount | null;
   user: {
     login: string;
     name: string | null;
@@ -191,8 +214,8 @@ interface FullProfileResponse {
     createdAt: string;
     websiteUrl: string | null;
     twitterUsername: string | null;
-    followers: { totalCount: number };
-    following: { totalCount: number };
+    followers: { totalCount: number } | null;
+    following: { totalCount: number } | null;
     repositories: {
       totalCount: number;
       nodes: Array<{
@@ -203,8 +226,8 @@ interface FullProfileResponse {
         createdAt: string;
         pushedAt: string;
       }>;
-    };
-    organizations: { nodes: GithubOrg[] };
+    } | null;
+    organizations: { nodes: GithubOrg[] } | null;
     lastYear: {
       totalCommitContributions: number;
       contributionCalendar: {
@@ -212,7 +235,7 @@ interface FullProfileResponse {
           contributionDays: Array<{ date: string; contributionCount: number }>;
         }>;
       };
-    };
+    } | null;
   } | null;
 }
 
@@ -350,7 +373,18 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
     if (!data.user) return null;
     const user = data.user;
 
-    const repositories: GithubRepo[] = user.repositories.nodes.map((repo) => ({
+    // A salvaged partial response (see githubGraphQL) can have `user`
+    // resolved but individual aliases null — every auxiliary field below is
+    // defaulted so a partial profile still yields a full valuation (the
+    // market-value formula uses commits/stars/followers/PRs, none of which
+    // live in the frequently-failing external-PR search) instead of throwing.
+    const externalMergedPRs = data.externalMergedPRs ?? { issueCount: 0, nodes: [] };
+    const externalMergedPRNodes = externalMergedPRs.nodes ?? [];
+    const closedIssues = data.closedIssues ?? { issueCount: 0 };
+    const lastYear = user.lastYear ?? { totalCommitContributions: 0, contributionCalendar: { weeks: [] } };
+    const repoNodes = user.repositories?.nodes ?? [];
+
+    const repositories: GithubRepo[] = repoNodes.map((repo) => ({
       name: repo.name,
       stars: repo.stargazerCount,
       forks: repo.forkCount,
@@ -376,7 +410,7 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       });
     }
 
-    const lastYearCalendar: ContributionDay[] = user.lastYear.contributionCalendar.weeks.flatMap(
+    const lastYearCalendar: ContributionDay[] = (lastYear.contributionCalendar?.weeks ?? []).flatMap(
       (week) =>
         week.contributionDays.map((day) => ({
           date: day.date,
@@ -384,7 +418,7 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
         }))
     );
 
-    const maxExternalPRRepoStars = data.externalMergedPRs.nodes.reduce(
+    const maxExternalPRRepoStars = externalMergedPRNodes.reduce(
       (max, node) => Math.max(max, node.repository?.stargazerCount ?? 0),
       0
     );
@@ -393,7 +427,7 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
     // "World Cup Player" occurrence, keyed by repo name and dated by the
     // earliest merge (a repo can have several merged PRs from this user).
     const worldCupRepoMap = new Map<string, WorldCupRepo>();
-    for (const node of data.externalMergedPRs.nodes) {
+    for (const node of externalMergedPRNodes) {
       const repo = node.repository;
       if (!repo || repo.stargazerCount < 10_000 || !node.mergedAt) continue;
       const year = new Date(node.mergedAt).getFullYear();
@@ -412,19 +446,19 @@ export async function fetchGithubProfile(login: string): Promise<GithubProfile |
       location: user.location,
       company: user.company,
       createdAt: user.createdAt,
-      followers: user.followers.totalCount,
-      following: user.following.totalCount,
-      publicRepos: user.repositories.totalCount,
+      followers: user.followers?.totalCount ?? 0,
+      following: user.following?.totalCount ?? 0,
+      publicRepos: user.repositories?.totalCount ?? 0,
       websiteUrl: user.websiteUrl,
       twitterUsername: user.twitterUsername,
       repositories,
-      organizations: user.organizations.nodes,
+      organizations: user.organizations?.nodes ?? [],
       contributionsByYear,
       lastYearCalendar,
-      lastYearCommits: user.lastYear.totalCommitContributions,
-      externalMergedPRs: data.externalMergedPRs.issueCount,
+      lastYearCommits: lastYear.totalCommitContributions ?? 0,
+      externalMergedPRs: externalMergedPRs.issueCount ?? 0,
       maxExternalPRRepoStars,
-      closedIssues: data.closedIssues.issueCount,
+      closedIssues: closedIssues.issueCount ?? 0,
       worldCupRepos,
     };
 

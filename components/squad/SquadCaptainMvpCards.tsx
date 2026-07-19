@@ -84,7 +84,7 @@ export function SquadCaptainMvpCards({ captain, mvp }: { captain: SquadPlayer; m
   }
 
   return (
-    <div data-reveal className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <div data-reveal className="grid grid-cols-1 gap-2">
       <HighlightCard player={captain} isMvp={false} badge="Captain" badgeClassName="bg-tm-blue-bright text-pitch" />
       <HighlightCard player={mvp} isMvp badge="MVP" badgeClassName="bg-gold text-pitch" />
     </div>

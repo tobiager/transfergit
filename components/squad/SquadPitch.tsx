@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { Starter } from "@/lib/squad";
 import { pitchPosition, pitchPositionInverse, clampToSafeArea } from "@/lib/squad/pitchLayout";
 import { isSmallSided, chipScale } from "@/lib/squad/formations";
@@ -79,6 +80,25 @@ export function SquadPitch({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggingSlotId, setDraggingSlotId] = useState<string | null>(null);
+
+  // In match-center mode (see .pitch-fit in globals.css) the pitch is sized
+  // by the available height, not its designed max-width — chips keep fixed
+  // px sizes, so they must scale with the container or they'd overflow a
+  // small pitch / look lost on a big one. --chip-scale is the measured
+  // width vs. the width the chip px values were designed for; .pitch-fit
+  // maps it to --chip-fit only when match-center sizing is active, so
+  // mobile/tablet chips keep their designed size.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const designWidth = smallSided ? 640 : 576;
+    const ro = new ResizeObserver(([entry]) => {
+      const scale = Math.min(1.25, Math.max(0.55, entry.contentRect.width / designWidth));
+      el.style.setProperty("--chip-scale", scale.toFixed(3));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [smallSided]);
 
   // All drag bookkeeping lives in refs, not state — pointermove can fire at
   // 60fps+ and none of this needs to trigger a re-render; only the eventual
@@ -205,9 +225,10 @@ export function SquadPitch({
     <div
       ref={containerRef}
       data-reveal
-      className={`relative mx-auto w-full rounded-xl border border-border bg-pitch-elevated ${
+      className={`pitch-fit relative mx-auto w-full rounded-xl border border-border bg-pitch-elevated ${
         smallSided ? "aspect-[4/3] max-w-[40rem]" : "aspect-[68/118] max-w-[36rem]"
       }`}
+      style={{ "--pitch-ar": smallSided ? "1.3333" : "0.5763" } as CSSProperties}
     >
       {smallSided ? <SmallPitchLines /> : <FullPitchLines />}
 

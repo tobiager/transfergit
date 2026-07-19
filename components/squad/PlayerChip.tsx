@@ -10,15 +10,18 @@ import { PlayerBadges } from "./PlayerBadges";
 
 // Text-fit widths per variant/breakpoint, in px — the chip's actual content
 // width once avatar/padding/gaps are subtracted. Pitch chips are a fixed
-// Tailwind width (w-14 mobile / sm:w-24 desktop); bench chips are a fixed
-// w-36 on the mobile scroll strip and an approximate 2-col grid cell width
-// on desktop. Computed once here so fitUsername can run at render time
+// Tailwind width (w-14 mobile / sm:w-24 desktop); row chips live in the
+// match-center sidebar column (now up to ~420px wide) and the mobile Squad
+// tab, so desktop gets extra room to show more of a long login before it
+// middle-ellipses. Computed once here so fitUsername can run at render time
 // (server or client — it's pure math, no measurement) instead of needing a
 // post-mount layout pass.
 const FIT_WIDTHS = {
   pitch: { mobile: 48, desktop: 88 },
-  bench: { mobile: 88, desktop: 132 },
+  row: { mobile: 130, desktop: 200 },
 } as const;
+
+type ChipVariant = keyof typeof FIT_WIDTHS;
 
 function UsernameText({
   login,
@@ -26,7 +29,7 @@ function UsernameText({
   className,
 }: {
   login: string;
-  variant: "pitch" | "bench";
+  variant: ChipVariant;
   className: string;
 }) {
   const widths = FIT_WIDTHS[variant];
@@ -49,26 +52,14 @@ function UsernameText({
 // readable — the fontSize is pre-computed per breakpoint (see
 // UsernameText) so the username never wraps or truncates mid-word; it
 // only shrinks, and past USERNAME_MAX_FONT_PX/floor it middle-ellipses.
-// `nameplate` adds an opaque, blurred backing so this reads over the
-// pitch's grass lines/center circle, not just a plain card background.
-function PlayerNameplate({
-  player,
-  variant,
-  nameplate,
-}: {
-  player: SquadPlayer;
-  variant: "pitch" | "bench";
-  nameplate: boolean;
-}) {
+// The opaque, blurred backing keeps this readable over the pitch's grass
+// lines/center circle.
+function PlayerNameplate({ player }: { player: SquadPlayer }) {
   const pendingTitle = player.valuationPending ? "valuation pending" : undefined;
 
   return (
-    <span
-      className={`flex flex-col ${variant === "pitch" ? "items-center text-center" : "items-start text-left"} ${
-        nameplate ? "rounded-md bg-black/70 px-1.5 py-1 backdrop-blur-sm" : ""
-      }`}
-    >
-      <UsernameText login={player.login} variant={variant} className="font-mono leading-tight text-foreground" />
+    <span className="flex flex-col items-center rounded-md bg-black/70 px-1.5 py-1 text-center backdrop-blur-sm">
+      <UsernameText login={player.login} variant="pitch" className="font-mono leading-tight text-foreground" />
       <span
         title={pendingTitle}
         className="font-display text-[9px] leading-tight text-value-green sm:text-xs"
@@ -90,11 +81,55 @@ export function PlayerChip({
   player: SquadPlayer | Starter;
   isCaptain: boolean;
   isMvp: boolean;
-  variant: "pitch" | "bench";
+  variant: ChipVariant;
   scale?: number;
 }) {
   const { refs, floatingStyles, isOpen, getReferenceProps, getFloatingProps } = usePlayerPopover();
   const role = "position" in player ? player.position.role : null;
+
+  // "row": one-line sidebar entry — avatar, username, value + commits on
+  // the same line. No nameplate, no role tag.
+  if (variant === "row") {
+    return (
+      <>
+        <button
+          type="button"
+          ref={(node) => refs.setReference(node)}
+          {...getReferenceProps()}
+          className="flex w-full items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-left transition hover:border-value-green/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-tm-blue-bright"
+        >
+          <span className="relative shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- direct CDN fetch, see below */}
+            <img src={player.avatarUrl} alt="" draggable={false} loading="lazy" decoding="async" className={`h-8 w-8 rounded-full ring-2 ${isMvp ? "ring-gold" : "ring-white/10"}`} />
+            <PlayerBadges isCaptain={isCaptain} isMvp={isMvp} />
+          </span>
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+            <UsernameText login={player.login} variant="row" className="truncate font-mono leading-tight text-foreground" />
+            <span
+              className="shrink-0 whitespace-nowrap text-right"
+              title={player.valuationPending ? "valuation pending" : undefined}
+            >
+              <span className="font-display text-[11px] text-value-green">{player.marketValueFormatted}</span>
+              <span className="ml-1.5 text-[9px] text-muted">{pluralize(player.commits, "commit")}</span>
+            </span>
+          </span>
+        </button>
+
+        {isOpen && (
+          <FloatingPortal>
+            <div
+              ref={(node) => refs.setFloating(node)}
+              style={floatingStyles}
+              {...getFloatingProps()}
+              className="z-50 w-60 select-text rounded-lg tm-card p-4 text-left"
+            >
+              <PlayerPopoverCard player={player} />
+            </div>
+          </FloatingPortal>
+        )}
+      </>
+    );
+  }
 
   return (
     <>
@@ -102,14 +137,13 @@ export function PlayerChip({
         type="button"
         ref={(node) => refs.setReference(node)}
         {...getReferenceProps()}
-        style={variant === "pitch" && scale !== 1 ? { transform: `scale(${scale})` } : undefined}
-        className={
-          variant === "pitch"
-            ? "flex w-14 flex-col items-center gap-1 rounded-lg px-1 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-tm-blue-bright sm:w-24"
-            : "flex w-full items-center gap-2 rounded-lg border border-border bg-surface px-2 py-2 text-left transition hover:border-value-green/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-tm-blue-bright"
-        }
+        // --chip-fit only resolves ≠1 inside a match-center-sized pitch
+        // (see .pitch-fit in globals.css); everywhere else this is the
+        // designed per-squad-size scale alone.
+        style={{ transform: `scale(calc(${scale} * var(--chip-fit, 1)))` }}
+        className="flex w-14 flex-col items-center gap-1 rounded-lg px-1 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-tm-blue-bright sm:w-24"
       >
-        {variant === "pitch" && role && (
+        {role && (
           <span className="rounded-full border border-border bg-surface/90 px-1.5 py-px font-mono text-[8px] uppercase tracking-wider text-muted">
             {role}
           </span>
@@ -122,18 +156,15 @@ export function PlayerChip({
           <img
             src={player.avatarUrl}
             alt=""
+            draggable={false}
             loading="lazy"
             decoding="async"
-            className={
-              variant === "pitch"
-                ? `h-10 w-10 rounded-full ring-2 sm:h-[72px] sm:w-[72px] ${isMvp ? "ring-gold" : "ring-white/20"}`
-                : `h-8 w-8 rounded-full ring-2 ${isMvp ? "ring-gold" : "ring-white/10"}`
-            }
+            className={`h-10 w-10 rounded-full ring-2 sm:h-[72px] sm:w-[72px] ${isMvp ? "ring-gold" : "ring-white/20"}`}
           />
           <PlayerBadges isCaptain={isCaptain} isMvp={isMvp} />
         </span>
 
-        <PlayerNameplate player={player} variant={variant} nameplate={variant === "pitch"} />
+        <PlayerNameplate player={player} />
       </button>
 
       {isOpen && (
@@ -142,7 +173,7 @@ export function PlayerChip({
             ref={(node) => refs.setFloating(node)}
             style={floatingStyles}
             {...getFloatingProps()}
-            className="z-50 w-60 rounded-lg tm-card p-4 text-left"
+            className="z-50 w-60 select-text rounded-lg tm-card p-4 text-left"
           >
             <PlayerPopoverCard player={player} />
           </div>

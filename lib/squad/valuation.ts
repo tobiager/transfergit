@@ -6,9 +6,10 @@ import {
   GithubQueryTooExpensiveError,
   getLastGithubRateLimitStatus,
 } from "../github.ts";
-import { computeValuationTimeline } from "../valuation.ts";
+import { computeValuationTimeline, computeMarketValue } from "../valuation.ts";
 import { computePosition } from "../positions.ts";
 import { resolveNationality } from "../geo.ts";
+import { calculateAgeYears, formatMarketValue } from "../format.ts";
 import type { Contributor, ContributorValuation } from "./types.ts";
 
 // --- Cost model (see the comment on valuateContributors for the numbers) -
@@ -40,8 +41,6 @@ interface ValuationTally {
   fetch: number;
   fallback: number;
 }
-
-class BudgetGuardError extends Error {}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -92,6 +91,56 @@ function pendingValuation(login: string): ContributorValuation {
   };
 }
 
+// Secondary fallback for a login whose full GraphQL profile query is
+// deterministically too expensive to run (GithubQueryTooExpensiveError —
+// GitHub returns 200 + RESOURCE_LIMITS_EXCEEDED with data.user === null; see
+// lib/github.ts). One cheap REST call to /users/{login} — which is NOT
+// subject to the GraphQL per-request cost limit — recovers followers +
+// account age, enough for a real (if reduced) market value via the same
+// formula, instead of a permanent "—". Stars/commit-history aren't in this
+// REST payload, so the value is a floor, not the full valuation; a later
+// render whose GraphQL query does succeed replaces it. Returns null (→ caller
+// falls back to pending) only if REST itself fails.
+async function fetchRestValuation(login: string): Promise<ContributorValuation | null> {
+  const token = process.env.GITHUB_TOKEN;
+  try {
+    const res = await fetch(`https://api.github.com/users/${login}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      next: { revalidate: VALUATION_CACHE_TTL_SECONDS },
+    });
+    if (!res.ok) return null;
+    const u = (await res.json()) as { followers?: number; created_at?: string; location?: string | null };
+    const followers = u.followers ?? 0;
+    const accountAgeYears = u.created_at ? calculateAgeYears(u.created_at) : 0;
+    const marketValue = computeMarketValue({
+      commitsTotal: 0,
+      starsTotal: 0,
+      followers,
+      prsTotal: 0,
+      reposOver10Stars: 0,
+      commitsLast12Months: 0,
+      accountAgeYears,
+    });
+    const nationality = resolveNationality(u.location ?? null);
+    console.warn(`[squad] REST fallback valuation for ${login} (followers=${followers}, value=${marketValue})`);
+    return {
+      login,
+      followers,
+      starsTotal: 0,
+      mainLanguage: null,
+      countryName: nationality.countryName,
+      countryIso2: nationality.iso2,
+      marketValue,
+      marketValueFormatted: formatMarketValue(marketValue),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function toContributorValuation(
   login: string,
   profile: NonNullable<Awaited<ReturnType<typeof fetchGithubProfile>>>
@@ -113,49 +162,67 @@ function toContributorValuation(
   };
 }
 
-// Fetches a contributor's full GitHub profile — the same one that powers
-// their individual /login card — and reuses the exact same market-value
-// formula. Classifies failures so a retry actually helps instead of
-// wasting latency on something that can't succeed within this render:
-//   - GithubRateLimitError (403/429, genuine hourly quota or a secondary
-//     abuse limit): its Retry-After can legitimately ask for seconds to
-//     minutes — waiting it out synchronously here, under CONCURRENCY=2,
-//     is what used to make a single cold render take 60-80s+ once several
-//     tier-1 accounts got throttled at once. No same-request retry; the
-//     login falls back immediately and the 10-minute negative cache (see
-//     cachedAttempt below) picks it up again on a later render instead.
-//   - GithubQueryTooExpensiveError (200 OK but errors[].type ===
-//     RESOURCE_LIMITS_EXCEEDED): deterministic — the exact same query
-//     costs the exact same amount every time, so a retry is guaranteed to
-//     fail identically. Skip straight to the caller's cached fallback
-//     instead of burning latency on a retry that cannot help. This is what
-//     was silently turning captains/top-contributors' valuations into
-//     "—": diagnosed via temporary logging, it's the accounts with the
-//     most history (many contributionsCollection years + a wide external
-//     merged-PR search) whose profile query is expensive enough to trip
-//     GitHub's per-request resource limit — not rate limiting, since
-//     x-ratelimit-remaining stayed above 95% throughout.
-//   - Anything else (network hiccup, GitHub 5xx): one fixed-backoff retry.
-export async function fetchValuation(login: string): Promise<ContributorValuation> {
+// Attempts the full-profile GraphQL valuation — the same profile that powers
+// the individual /login card, reusing the exact same market-value formula.
+// Returns null (NOT throws) when GraphQL can't produce a usable profile, so
+// the caller can try the REST fallback; only re-throws the unrecoverable
+// GITHUB_TOKEN config error. Failure classes, and why a retry does/doesn't
+// help:
+//   - GithubQueryTooExpensiveError (200 OK, errors[].type ===
+//     RESOURCE_LIMITS_EXCEEDED, data.user null): deterministic — the same
+//     query costs the same every time, so a retry is pointless. This is the
+//     dominant cause of squad "—"s: long-tenured/active accounts (many
+//     contributionsCollection year aliases + a wide external merged-PR
+//     search) trip GitHub's per-REQUEST resource limit, independent of the
+//     hourly rate budget (x-ratelimit-remaining stays >90%).
+//   - GithubRateLimitError (403/429) / budget-guard: the GraphQL hourly
+//     budget is low or throttled — no same-request retry (its Retry-After
+//     can be minutes). REST is a SEPARATE budget, so falling back there is
+//     both cheaper and doesn't wait.
+//   - Anything else (network hiccup, GitHub 5xx): one fixed-backoff retry,
+//     then REST.
+async function fetchGraphqlValuation(login: string): Promise<ContributorValuation | null> {
   const budget = getLastGithubRateLimitStatus();
   if (budget && budget.remaining / budget.limit < RATE_LIMIT_BUDGET_FLOOR) {
-    throw new BudgetGuardError(
-      `GitHub rate limit budget low (${budget.remaining}/${budget.limit}) — not starting new fetches`
-    );
+    // GraphQL budget low — don't start a new GraphQL fetch; let the caller
+    // fall back to REST, which draws on a different budget.
+    return null;
   }
 
   for (let attempt = 0; ; attempt++) {
     try {
       const profile = await fetchGithubProfile(login);
+      // A genuinely-missing/org account returns null from fetchGithubProfile
+      // → a real €0, not a fetch failure — return it, don't REST-fallback.
       return profile ? toContributorValuation(login, profile) : zeroValuation(login);
     } catch (err) {
       if (err instanceof Error && err.message.includes("GITHUB_TOKEN")) throw err;
+      // Deterministic (too expensive) or throttled (rate limit): no retry.
+      // Transient: one backoff retry, then give up to REST.
       if (attempt > 0 || err instanceof GithubQueryTooExpensiveError || err instanceof GithubRateLimitError) {
-        throw err;
+        return null;
       }
       await sleep(RETRY_DELAY_MS);
     }
   }
+}
+
+// A contributor's market value. GraphQL first (full-quality); on ANY GraphQL
+// failure that isn't "user genuinely doesn't exist" — too-expensive query,
+// rate limit, low budget, transient 5xx — fall back to the cheap REST /users
+// lookup for a reduced-but-real value. Only when BOTH fail does this throw,
+// which the caller (valuateOne) turns into a stale-known-good or, last of
+// all, a pending "—". This is what stops long-tenured accounts (whose profile
+// query deterministically trips GitHub's per-request resource limit) from
+// showing "—" forever on both the live page and every export.
+export async function fetchValuation(login: string): Promise<ContributorValuation> {
+  const graphql = await fetchGraphqlValuation(login);
+  if (graphql) return graphql;
+
+  const rest = await fetchRestValuation(login);
+  if (rest) return rest;
+
+  throw new Error(`valuation unavailable for ${login}: GraphQL failed and REST fallback failed`);
 }
 
 // Cross-invocation persistence: Next's Data Cache via unstable_cache — the

@@ -16,7 +16,53 @@ import {
   HEADER_H,
   FOOTER_H,
 } from "./theme.ts";
-import type { SquadCardData } from "./types.ts";
+import type { SquadCardData, SquadSvgThemeName } from "./types.ts";
+
+// Per-theme palette — floodlight reuses the shared dark tokens (SVG_COLORS),
+// grass is a green pitch with white lines and gold accents, mirroring the PNG
+// exports' grass theme (app/api/og/_shared/squadTheme.ts) so both README
+// formats honour the same toggle.
+interface SvgPalette {
+  cardBg: string;
+  outerBorder: string;
+  pitchFill: string;
+  line: string;
+  foreground: string;
+  muted: string;
+  accent: string;
+  gold: string;
+  nameBacking: string;
+  avatarFallback: string;
+}
+
+function palette(theme: SquadSvgThemeName): SvgPalette {
+  if (theme === "grass") {
+    return {
+      cardBg: "#0d3a1c",
+      outerBorder: "rgba(255,212,0,0.5)",
+      pitchFill: "#1a5e2f",
+      line: "rgba(255,255,255,0.55)",
+      foreground: "#ffffff",
+      muted: "rgba(255,255,255,0.75)",
+      accent: "#ffd400",
+      gold: "#ffd400",
+      nameBacking: "rgba(6,20,10,0.62)",
+      avatarFallback: "#0d3a1c",
+    };
+  }
+  return {
+    cardBg: C.pitch,
+    outerBorder: "rgba(0,230,118,0.45)",
+    pitchFill: "rgba(255,255,255,0.03)",
+    line: C.border,
+    foreground: C.foreground,
+    muted: C.muted,
+    accent: C.green,
+    gold: C.gold,
+    nameBacking: "rgba(0,0,0,0.6)",
+    avatarFallback: C.pitch,
+  };
+}
 
 // GitHub's camo proxy serves this SVG raw inside an <img> tag — CSS
 // animations run there, but any dynamic text must be escaped since it's
@@ -43,6 +89,7 @@ function truncateName(name: string, max: number): string {
 
 export function renderSquadCardSvg(data: SquadCardData): string {
   const { squad, siteHost, avatarDataUris, animate, logoDataUri } = data;
+  const t = palette(data.theme ?? "floodlight");
   const playerCount = squad.starters.length + squad.bench.length;
   const small = isSmallSided(squad.starters.length);
   const scale = chipScale(squad.starters.length);
@@ -70,24 +117,24 @@ export function renderSquadCardSvg(data: SquadCardData): string {
     <g class="reveal" style="animation-delay:${headerDelay}ms">
       <clipPath id="logoClip"><rect x="${CARD_PAD}" y="${logoY}" width="${LOGO_SIZE}" height="${LOGO_SIZE}" rx="12" /></clipPath>
       <image href="${logoDataUri}" x="${CARD_PAD}" y="${logoY}" width="${LOGO_SIZE}" height="${LOGO_SIZE}" clip-path="url(#logoClip)" />
-      <text x="${textX}" y="${logoY + 22}" font-family="${FONT_SANS}" font-size="16" fill="${C.muted}"
+      <text x="${textX}" y="${logoY + 22}" font-family="${FONT_SANS}" font-size="16" fill="${t.muted}"
         letter-spacing="3">REPO SQUAD</text>
       <text x="${textX + 128}" y="${logoY + 22}" font-family="${FONT_DISPLAY}" font-size="18"
-        fill="${C.green}">${esc(formationLabel(squad.formation))}</text>
-      <text x="${textX}" y="${logoY + 62}" font-family="${FONT_DISPLAY}" font-size="38" fill="${C.foreground}">${esc(
+        fill="${t.accent}">${esc(formationLabel(squad.formation))}</text>
+      <text x="${textX}" y="${logoY + 62}" font-family="${FONT_DISPLAY}" font-size="38" fill="${t.foreground}">${esc(
     squad.owner
   )}/${esc(squad.repo)}</text>
       <text x="${CARD_WIDTH - CARD_PAD}" y="${logoY + 26}" text-anchor="end" font-family="${FONT_DISPLAY}" font-size="44"
-        fill="${C.green}">${esc(squad.totalValueFormatted)}</text>
+        fill="${t.accent}">${esc(squad.totalValueFormatted)}</text>
       <text x="${CARD_WIDTH - CARD_PAD}" y="${logoY + 54}" text-anchor="end" font-family="${FONT_SANS}" font-size="18"
-        fill="${C.muted}">${playerCount} players</text>
+        fill="${t.muted}">${playerCount} players</text>
     </g>`;
 
   // --- Pitch ------------------------------------------------------------
   const pitchDelay = nextDelay();
   const pitchLines = small
     ? `<svg x="${pitchX}" y="${pitchY}" width="${pitchW}" height="${pitchH}" viewBox="0 0 68 51">
-        <g fill="none" stroke="${C.border}" stroke-width="0.5">
+        <g fill="none" stroke="${t.line}" stroke-width="0.5">
           <rect x="1" y="1" width="66" height="49" rx="2" />
           <line x1="1" y1="3" x2="67" y2="3" />
           <path d="M 20 3 A 14 14 0 0 0 48 3" />
@@ -96,11 +143,11 @@ export function renderSquadCardSvg(data: SquadCardData): string {
         </g>
       </svg>`
     : `<svg x="${pitchX}" y="${pitchY}" width="${pitchW}" height="${pitchH}" viewBox="0 0 68 105">
-        <g fill="none" stroke="${C.border}" stroke-width="0.5">
+        <g fill="none" stroke="${t.line}" stroke-width="0.5">
           <rect x="1" y="1" width="66" height="103" rx="2" />
           <line x1="1" y1="52.5" x2="67" y2="52.5" />
           <circle cx="34" cy="52.5" r="9.15" />
-          <circle cx="34" cy="52.5" r="0.4" fill="${C.border}" />
+          <circle cx="34" cy="52.5" r="0.4" fill="${t.line}" />
           <rect x="13.85" y="88.5" width="40.3" height="16.5" />
           <rect x="24.85" y="99" width="18.3" height="6" />
           <rect x="13.85" y="0" width="40.3" height="16.5" />
@@ -110,7 +157,7 @@ export function renderSquadCardSvg(data: SquadCardData): string {
   const pitchBox = `
     <g class="reveal" style="animation-delay:${pitchDelay}ms">
       <rect x="${pitchX}" y="${pitchY}" width="${pitchW}" height="${pitchH}" rx="24"
-        fill="rgba(255,255,255,0.03)" stroke="${C.border}" stroke-width="2" />
+        fill="${t.pitchFill}" stroke="${t.line}" stroke-width="2" />
       ${pitchLines}
     </g>`;
 
@@ -140,7 +187,7 @@ export function renderSquadCardSvg(data: SquadCardData): string {
       const isMvp = player.login === squad.mvp.login;
       const avatarUri = avatarDataUris.get(player.avatarUrl) ?? null;
       const clipId = `avatarClip${i}`;
-      const ringColor = isMvp ? C.gold : C.green;
+      const ringColor = isMvp ? t.gold : t.accent;
 
       let avatarMarkup: string;
       if (avatarUri) {
@@ -151,9 +198,9 @@ export function renderSquadCardSvg(data: SquadCardData): string {
         <circle cx="${avatarCx}" cy="${avatarCy}" r="${avatarSize / 2}" fill="none" stroke="${ringColor}" stroke-width="3" />`;
       } else {
         avatarMarkup = `
-        <circle cx="${avatarCx}" cy="${avatarCy}" r="${avatarSize / 2}" fill="${C.pitch}" stroke="${ringColor}" stroke-width="3" />
+        <circle cx="${avatarCx}" cy="${avatarCy}" r="${avatarSize / 2}" fill="${t.avatarFallback}" stroke="${ringColor}" stroke-width="3" />
         <text x="${avatarCx}" y="${avatarCy + Math.round(12 * scale)}" text-anchor="middle"
-          font-family="${FONT_DISPLAY}" font-size="${Math.round(30 * scale)}" fill="${C.foreground}">${esc(
+          font-family="${FONT_DISPLAY}" font-size="${Math.round(30 * scale)}" fill="${t.foreground}">${esc(
           player.login[0]?.toUpperCase() ?? "?"
         )}</text>`;
       }
@@ -161,14 +208,14 @@ export function renderSquadCardSvg(data: SquadCardData): string {
       const badgeMarkup = `
         ${
           isCaptain
-            ? `<circle cx="${avatarCx + avatarSize / 2 - 4}" cy="${top + 4}" r="11" fill="#4d9fff" stroke="${C.pitch}" stroke-width="2" />
-        <text x="${avatarCx + avatarSize / 2 - 4}" y="${top + 8}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-size="11" fill="${C.pitch}">C</text>`
+            ? `<circle cx="${avatarCx + avatarSize / 2 - 4}" cy="${top + 4}" r="11" fill="#4d9fff" stroke="${t.cardBg}" stroke-width="2" />
+        <text x="${avatarCx + avatarSize / 2 - 4}" y="${top + 8}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-size="11" fill="#ffffff">C</text>`
             : ""
         }
         ${
           isMvp
-            ? `<circle cx="${avatarCx + avatarSize / 2 - 4}" cy="${top + avatarSize - 4}" r="11" fill="${C.gold}" stroke="${C.pitch}" stroke-width="2" />
-        <text x="${avatarCx + avatarSize / 2 - 4}" y="${top + avatarSize}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-size="12" fill="${C.pitch}">★</text>`
+            ? `<circle cx="${avatarCx + avatarSize / 2 - 4}" cy="${top + avatarSize - 4}" r="11" fill="${t.gold}" stroke="${t.cardBg}" stroke-width="2" />
+        <text x="${avatarCx + avatarSize / 2 - 4}" y="${top + avatarSize}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-size="12" fill="${t.cardBg}">★</text>`
             : ""
         }`;
 
@@ -189,16 +236,16 @@ export function renderSquadCardSvg(data: SquadCardData): string {
         ${avatarMarkup}
         ${badgeMarkup}
         <rect x="${avatarCx - chipW / 2 + backingPad}" y="${backingY}" width="${chipW - backingPad * 2}" height="${backingHeight}"
-          rx="8" fill="rgba(0,0,0,0.6)" />
+          rx="8" fill="${t.nameBacking}" />
         <text x="${avatarCx}" y="${nameY}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-size="${Math.round(
         18 * scale
-      )}" fill="${C.foreground}">${esc(truncateName(player.login, maxChars))}</text>
+      )}" fill="${t.foreground}">${esc(truncateName(player.login, maxChars))}</text>
         <text x="${avatarCx}" y="${valueY}" text-anchor="middle" font-family="${FONT_SANS}" font-size="${Math.round(
         16 * scale
-      )}" fill="${C.green}">${esc(player.marketValueFormatted)}</text>
+      )}" fill="${t.accent}">${esc(player.marketValueFormatted)}</text>
         <text x="${avatarCx}" y="${commitsY}" text-anchor="middle" font-family="${FONT_SANS}" font-size="${Math.round(
         12 * scale
-      )}" fill="${C.muted}">${pluralize(player.commits, "commit")}</text>
+      )}" fill="${t.muted}">${pluralize(player.commits, "commit")}</text>
       </g>`;
     })
     .join("");
@@ -210,10 +257,10 @@ export function renderSquadCardSvg(data: SquadCardData): string {
   const footerLogoY = footerY - FOOTER_LOGO_SIZE + 4;
   const footer = `
     <g class="reveal" style="animation-delay:${footerDelay}ms">
-      <line x1="${CARD_PAD}" y1="${footerY - 24}" x2="${CARD_WIDTH - CARD_PAD}" y2="${footerY - 24}" stroke="${C.border}" />
+      <line x1="${CARD_PAD}" y1="${footerY - 24}" x2="${CARD_WIDTH - CARD_PAD}" y2="${footerY - 24}" stroke="${t.line}" />
       <clipPath id="footerLogoClip"><rect x="${CARD_PAD}" y="${footerLogoY}" width="${FOOTER_LOGO_SIZE}" height="${FOOTER_LOGO_SIZE}" rx="5" /></clipPath>
       <image href="${logoDataUri}" x="${CARD_PAD}" y="${footerLogoY}" width="${FOOTER_LOGO_SIZE}" height="${FOOTER_LOGO_SIZE}" clip-path="url(#footerLogoClip)" />
-      <text x="${CARD_PAD + FOOTER_LOGO_SIZE + 10}" y="${footerY}" font-family="${FONT_SANS}" font-size="16" fill="${C.muted}">${esc(
+      <text x="${CARD_PAD + FOOTER_LOGO_SIZE + 10}" y="${footerY}" font-family="${FONT_SANS}" font-size="16" fill="${t.muted}">${esc(
     siteHost
   )}/squad/${esc(squad.owner)}/${esc(squad.repo)}</text>
     </g>`;
@@ -235,9 +282,9 @@ export function renderSquadCardSvg(data: SquadCardData): string {
 <svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" viewBox="0 0 ${CARD_WIDTH} ${CARD_HEIGHT}">
   <defs>${defs.join("")}</defs>
   ${styleBlock}
-  <rect x="0" y="0" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="${C.pitch}" />
+  <rect x="0" y="0" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="${t.cardBg}" />
   <rect x="1.5" y="1.5" width="${CARD_WIDTH - 3}" height="${CARD_HEIGHT - 3}" fill="none"
-    stroke="rgba(0,230,118,0.45)" stroke-width="3" />
+    stroke="${t.outerBorder}" stroke-width="3" />
   ${header}
   ${pitchBox}
   ${chips}

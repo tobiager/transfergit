@@ -26,7 +26,11 @@ export function SquadHeader({ squad, playerCount }: { squad: Squad; playerCount:
       <h1
         className={`mt-1 line-clamp-2 break-words font-display uppercase leading-[1.05] tracking-tight ${titleSizeClass(title)}`}
       >
-        {title}
+        {/* Prefer wrapping at the "/" (owner / repo) over breaking a word
+            mid-token ("PONY↵TAIL") — <wbr> gives that a break opportunity,
+            with break-words as the last resort for a single huge token. */}
+        {squad.owner}/<wbr />
+        {squad.repo}
       </h1>
       <div className="mt-2 flex flex-col items-center gap-1 sm:flex-row sm:items-baseline sm:gap-4">
         <p className="font-display text-3xl leading-none text-value-green glow-green-text tabular-nums md:text-4xl">

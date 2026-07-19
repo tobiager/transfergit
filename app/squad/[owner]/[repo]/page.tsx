@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getSquadFromParams, RepoNotFoundError, NotEnoughPlayersError } from "@/lib/squad";
-import { ProfileReveal } from "@/components/ProfileReveal";
 import { SquadHeader } from "@/components/squad/SquadHeader";
 import { SquadInteractive } from "@/components/squad/SquadInteractive";
 import { SquadCaptainMvpCards } from "@/components/squad/SquadCaptainMvpCards";
@@ -73,34 +72,38 @@ async function SquadBody({
   const playerCount = squad.starters.length + squad.bench.length;
 
   return (
-    <>
-      <div className="lg:col-start-8 lg:col-span-5 lg:row-start-1">
-        <SquadHeader squad={squad} playerCount={playerCount} />
-      </div>
-
-      <SquadInteractive
-        owner={owner}
-        repo={repo}
-        starters={squad.starters}
-        captainLogin={squad.captain.login}
-        mvpLogin={squad.mvp.login}
-        standardOptions={squad.formationOptions}
-        initialFormation={squad.formation}
-        baseFormation={baseFormation}
-      />
-
-      <div className="lg:col-start-8 lg:col-span-5 lg:row-start-3">
-        <SquadCaptainMvpCards captain={squad.captain} mvp={squad.mvp} />
-      </div>
-
-      <div className="lg:col-start-8 lg:col-span-5 lg:row-start-4">
-        <SquadBench bench={squad.bench} captainLogin={squad.captain.login} mvpLogin={squad.mvp.login} />
-      </div>
-
-      <div className="lg:col-start-8 lg:col-span-5 lg:row-start-5">
-        <SquadReserves reserves={squad.reserves} />
-      </div>
-    </>
+    <SquadInteractive
+      owner={owner}
+      repo={repo}
+      starters={squad.starters}
+      captainLogin={squad.captain.login}
+      mvpLogin={squad.mvp.login}
+      standardOptions={squad.formationOptions}
+      initialFormation={squad.formation}
+      baseFormation={baseFormation}
+      sidebarTop={
+        <div className="flex flex-col gap-3">
+          <SquadHeader squad={squad} playerCount={playerCount} />
+          <SquadCaptainMvpCards captain={squad.captain} mvp={squad.mvp} />
+        </div>
+      }
+      sidebar={
+        <div className="flex flex-col gap-4">
+          <SquadBench bench={squad.bench} captainLogin={squad.captain.login} mvpLogin={squad.mvp.login} />
+          <SquadReserves reserves={squad.reserves} />
+          <p className="pb-1 pt-2 text-center text-[10px] text-muted">
+            <a
+              href="https://github.com/tobiager"
+              target="_blank"
+              rel="noreferrer"
+              className="transition hover:text-foreground"
+            >
+              Built by @tobiager
+            </a>
+          </p>
+        </div>
+      }
+    />
   );
 }
 
@@ -109,35 +112,29 @@ export default async function SquadPage({ params, searchParams }: PageProps) {
   const { formation: formationParam, base: baseParam, layout: layoutParam } = await searchParams;
 
   return (
-    <ProfileReveal>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 md:px-6 md:py-6">
-        {/*
-          Single 12-col grid, no nesting: every block gets an explicit
-          lg:col-start so the pitch can sit in a tall sticky left column
-          (col 1-7, spanning all 6 right-column rows) while the rest stack
-          in col 8-12. Below lg, explicit placement doesn't apply and the
-          grid falls back to a single column — DOM order there is the
-          mobile-desired order (header, pills, pitch, highlights, bench,
-          reserves, export), independent of the desktop column each block
-          lands in.
-
-          The Suspense fallback (SquadSkeleton) mirrors this exact same grid
-          so swapping to the real SquadBody never shifts layout — see
-          components/squad/SquadSkeleton.tsx.
-        */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start lg:gap-8">
-          <Suspense fallback={<SquadSkeleton owner={owner} repo={repo} />}>
-            <SquadBody
-              owner={owner}
-              repo={repo}
-              formationParam={formationParam}
-              baseParam={baseParam}
-              layoutParam={layoutParam}
-            />
-          </Suspense>
-        </div>
+    <>
+      {/*
+        Match-center layout — the shell (SquadShell, shared with the
+        Suspense fallback so streaming in never shifts layout) handles
+        tabs/drawer/columns per breakpoint, and locks the page to one
+        viewport on desktop. No ProfileReveal here: its scroll-triggered
+        reveals key off window scroll, which the desktop shell doesn't have.
+      */}
+      <main className="w-full flex-1">
+        <Suspense fallback={<SquadSkeleton owner={owner} repo={repo} />}>
+          <SquadBody
+            owner={owner}
+            repo={repo}
+            formationParam={formationParam}
+            baseParam={baseParam}
+            layoutParam={layoutParam}
+          />
+        </Suspense>
       </main>
-      <Footer />
-    </ProfileReveal>
+      {/* The global footer would break the desktop 100dvh lock — mobile only. */}
+      <div className="lg:hidden">
+        <Footer />
+      </div>
+    </>
   );
 }

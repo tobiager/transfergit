@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Starter } from "@/lib/squad";
 import type { FormationName } from "@/lib/squad/formations";
 import { CUSTOM_FORMATION } from "@/lib/squad/formations";
@@ -8,6 +9,11 @@ import { encodeLayout, type CustomLayout } from "@/lib/squad/customLayout";
 import { FormationSelector } from "./FormationSelector";
 import { SquadPitch } from "./SquadPitch";
 import { SquadExportPanel } from "./SquadExportPanel";
+import { SquadShell } from "./SquadShell";
+
+function layoutFromStarters(starters: Starter[]): CustomLayout {
+  return Object.fromEntries(starters.map((s) => [s.position.id, { x: s.position.x, y: s.position.y }]));
+}
 
 // Owns the one piece of state the URL's ?formation=custom&layout=... can't
 // (a raw history.replaceState doesn't trigger a Next.js navigation, so
@@ -27,6 +33,8 @@ export function SquadInteractive({
   standardOptions,
   initialFormation,
   baseFormation,
+  sidebarTop,
+  sidebar,
 }: {
   owner: string;
   repo: string;
@@ -36,33 +44,78 @@ export function SquadInteractive({
   standardOptions: FormationName[];
   initialFormation: FormationName;
   baseFormation: FormationName;
+  // Server-rendered sidebar content, split for the shell: `sidebarTop` is the
+  // pinned identity block (header + captain/MVP); `sidebar` is the scrolling
+  // body (bench, reserves, credit).
+  sidebarTop: ReactNode;
+  sidebar: ReactNode;
 }) {
-  const [formation, setFormation] = useState<string>(initialFormation);
-  const [positions, setPositions] = useState<CustomLayout>(() =>
-    Object.fromEntries(starters.map((s) => [s.position.id, { x: s.position.x, y: s.position.y }]))
+  // The URL is the single source of truth for which pill is active. A standard
+  // pill is a real Next navigation (?formation=442) that useSearchParams
+  // reflects — on load, on pill clicks, and on back/forward (Next's router
+  // updates useSearchParams for all of them). This is what fixes the
+  // "?formation=442 lights up 433" desync: previously the active pill was a
+  // useState seeded once at mount, so a client-side pill navigation never
+  // updated it.
+  //
+  // A Custom drag is the one thing the URL-via-router can't carry: it's a raw
+  // history.replaceState (deliberately, so dragging doesn't reload the page),
+  // which useSearchParams never observes. So it's tracked as a client-only
+  // override that any real navigation clears — see the render-time reset
+  // below (React's "adjust state during render on prop change" pattern, no
+  // effect / no cascading render).
+  const searchParams = useSearchParams();
+  const urlFormation = searchParams.get("formation");
+
+  const [customOverride, setCustomOverride] = useState<string | null>(
+    urlFormation === CUSTOM_FORMATION ? CUSTOM_FORMATION : null
   );
+  const [prevUrlFormation, setPrevUrlFormation] = useState(urlFormation);
+  if (prevUrlFormation !== urlFormation) {
+    setPrevUrlFormation(urlFormation);
+    // A pill click / back-forward moves the URL to a STANDARD formation —
+    // drop the client-only Custom-drag override so the pill follows the URL.
+    // A drag itself moves the URL to `custom` (via replaceState, which Next's
+    // patched history surfaces here); that must NOT clear the override.
+    if (urlFormation !== CUSTOM_FORMATION) {
+      setCustomOverride(null);
+    }
+  }
+  const formation = customOverride ?? urlFormation ?? initialFormation;
+
+  const [positions, setPositions] = useState<CustomLayout>(() => layoutFromStarters(starters));
+  const [prevStarters, setPrevStarters] = useState(starters);
+  if (prevStarters !== starters) {
+    // A real navigation ships fresh server-resolved starter positions (custom
+    // layouts already applied server-side via getSquadFromParams), so reset
+    // the client overrides to match — otherwise switching formations would
+    // keep the previous layout's coordinates on the new slots. This fires only
+    // when the `starters` reference changes (navigation), never on a local
+    // drag re-render (which keeps the same prop reference).
+    setPrevStarters(starters);
+    setPositions(layoutFromStarters(starters));
+  }
 
   const handleDragStart = useCallback(() => {
-    setFormation(CUSTOM_FORMATION);
+    setCustomOverride(CUSTOM_FORMATION);
   }, []);
 
   const handleDragEnd = useCallback(
     (slotId: string, x: number, y: number) => {
-      setPositions((prev) => {
-        const next = { ...prev, [slotId]: { x, y } };
-        // Not a Next.js navigation — router state (useSearchParams etc.)
-        // deliberately doesn't see this; only the raw address bar/back
-        // button does, which is exactly what makes the link shareable
-        // without a full page reload on every drag.
-        const url = new URL(window.location.href);
-        url.searchParams.set("formation", CUSTOM_FORMATION);
-        url.searchParams.set("base", baseFormation);
-        url.searchParams.set("layout", encodeLayout(next));
-        window.history.replaceState(null, "", url);
-        return next;
-      });
+      const next = { ...positions, [slotId]: { x, y } };
+      setPositions(next);
+      // Persist the drag to the address bar for a shareable link, WITHOUT a
+      // Next navigation (no full reload per drag). This runs in the pointerup
+      // handler — never inside a setState updater, which React can execute
+      // during render, where Next's patched replaceState would try to update
+      // the Router mid-render ("Cannot update Router while rendering" error).
+      const url = new URL(window.location.href);
+      url.searchParams.set("formation", CUSTOM_FORMATION);
+      url.searchParams.set("base", baseFormation);
+      url.searchParams.set("layout", encodeLayout(next));
+      window.history.replaceState(null, "", url);
     },
-    [baseFormation]
+    [positions, baseFormation]
   );
 
   const renderedStarters = starters.map((starter) => {
@@ -89,8 +142,10 @@ export function SquadInteractive({
   }, [formation, baseFormation, positions]);
 
   return (
-    <>
-      <div className="lg:col-start-8 lg:col-span-5 lg:row-start-2">
+    <SquadShell
+      sidebarTop={sidebarTop}
+      sidebar={sidebar}
+      toolbar={
         <FormationSelector
           owner={owner}
           repo={repo}
@@ -98,9 +153,8 @@ export function SquadInteractive({
           options={standardOptions}
           resetHref={`/squad/${owner}/${repo}?formation=${baseFormation}`}
         />
-      </div>
-
-      <div className="lg:sticky lg:top-6 lg:col-start-1 lg:col-span-7 lg:row-span-6 lg:row-start-1 lg:self-start">
+      }
+      pitch={
         <SquadPitch
           starters={renderedStarters}
           captainLogin={captainLogin}
@@ -108,11 +162,8 @@ export function SquadInteractive({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         />
-      </div>
-
-      <div className="lg:col-start-8 lg:col-span-5 lg:row-start-6">
-        <SquadExportPanel owner={owner} repo={repo} formationQuery={formationQuery} />
-      </div>
-    </>
+      }
+      exportPanel={<SquadExportPanel owner={owner} repo={repo} formationQuery={formationQuery} />}
+    />
   );
 }

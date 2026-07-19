@@ -24,14 +24,14 @@ export function isSmallSided(starterCount: number): boolean {
 // spaced instead of bunching in the middle with dead air near the
 // opponent's box. FULL_BANDS covers the full vertical pitch (8-11
 // players); SMALL_BANDS covers the compressed small-sided half-pitch (3-7
-// players). CDM_BAND/CAM_BAND are extra bands slotted into the gaps for
-// the classic formations' defensive/attacking midfielders — see
-// components/squad/formations.test.ts's pixel-distance collision test,
+// players). CDM_BAND is an extra band slotted into the gap for the classic
+// formations' defensive midfielders (4231 places its attacking line with
+// explicit y-values, see below) — see formations.test.ts's pixel-distance
+// collision test,
 // which every formation in this file must satisfy: no two slots closer
 // than 1.5x a chip's width in real rendered pixels.
 const FULL_BANDS = { gk: 0, def: 22, mid: 56, fwd: 94 };
 const CDM_BAND = 40;
-const CAM_BAND = 76;
 // Small-sided chips render at up to 1.4x scale (see chipScale()) on a court
 // that's wide but short — so the gk->fwd spread leans on nearly the entire
 // y-range (bigger gaps, especially fwd<->mid, the two most crowded lines)
@@ -95,11 +95,17 @@ export const FORMATIONS: Record<string, PositionSlot[]> = {
     { id: "CB_L", label: "Left Centre-Back", role: "CB", x: 15, y: FULL_BANDS.def },
     GK,
   ],
+  // The forward line and CAM use explicit y-values (not FULL_BANDS.fwd/
+  // CAM_BAND) — the shared bands left a top-heavy 4231 with the wingers
+  // crammed against the striker and a big empty gap down to the CDMs. These
+  // are the hand-tuned positions (pulled the ST/wings/CAM down into an even
+  // spread) that read as a real 4-2-3-1; the two banks of the "231" are the
+  // CDM pair (y=40) and the 3 behind the ST.
   "4231": [
-    { id: "ST", label: "Centre-Forward", role: "ST", x: 50, y: FULL_BANDS.fwd + 4 },
-    { id: "RW", label: "Right Winger", role: "RW", x: 85, y: FULL_BANDS.fwd },
-    { id: "LW", label: "Left Winger", role: "LW", x: 15, y: FULL_BANDS.fwd },
-    { id: "CAM", label: "Attacking Midfielder", role: "CAM", x: 50, y: CAM_BAND },
+    { id: "ST", label: "Centre-Forward", role: "ST", x: 50, y: 86 },
+    { id: "RW", label: "Right Winger", role: "RW", x: 90, y: 72 },
+    { id: "LW", label: "Left Winger", role: "LW", x: 10, y: 72 },
+    { id: "CAM", label: "Attacking Midfielder", role: "CAM", x: 50, y: 64 },
     { id: "CDM_R", label: "Right Defensive Midfielder", role: "CDM", x: 70, y: CDM_BAND },
     { id: "CDM_L", label: "Left Defensive Midfielder", role: "CDM", x: 30, y: CDM_BAND },
     { id: "RB", label: "Right-Back", role: "RB", x: 98, y: FULL_BANDS.def },

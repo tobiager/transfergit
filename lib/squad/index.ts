@@ -6,7 +6,7 @@ import { resolveFormation, getFormationOptions, CUSTOM_FORMATION, type Formation
 import { assignRoles } from "./roles.ts";
 import { decodeLayout, applyCustomLayout } from "./customLayout.ts";
 import { formatMarketValue } from "../format.ts";
-import type { Squad, SquadPlayer } from "./types.ts";
+import type { Squad, SquadPlayer, ReservePlayer } from "./types.ts";
 
 export { RepoNotFoundError, NotEnoughPlayersError } from "./contributors.ts";
 export { GithubRateLimitError } from "../github.ts";
@@ -28,7 +28,27 @@ const TIER1_SIZE = 30;
 // day rather than being stuck on whatever failed the first time.
 const SQUAD_CACHE_TTL_SECONDS = 21600;
 
-async function computeRepoSquad(owner: string, repo: string, requestedFormation?: FormationName): Promise<Squad> {
+// The expensive, FORMATION-INDEPENDENT half of a squad: the contributor set,
+// their valuations, and the one authoritative total. This — not the fully
+// assembled Squad — is what gets cached, so the live page and every export
+// route (OG PNG, dynamic SVG) share the exact same valued roster and the
+// exact same total regardless of which formation each one requests. Folding
+// the formation into the cache key (as this used to) split the page
+// (formation=undefined) and the exports (formation="433") into separate
+// cache entries that recomputed independently and could diverge — that's what
+// let the page read €384m while the social banner read €7.50m off its own
+// cold, mostly-pending recompute.
+interface ValuedSquad {
+  owner: string;
+  repo: string;
+  players: SquadPlayer[];
+  reserves: ReservePlayer[];
+  totalValue: number;
+  totalValueFormatted: string;
+  pendingValuations: string[];
+}
+
+async function computeValuedSquad(owner: string, repo: string): Promise<ValuedSquad> {
   const totalStart = Date.now();
   const contributors = await fetchTopContributors(owner, repo);
   const tier1 = contributors.slice(0, TIER1_SIZE);
@@ -42,16 +62,35 @@ async function computeRepoSquad(owner: string, repo: string, requestedFormation?
     ...valuationByLogin.get(c.login)!,
   }));
 
-  const formation = resolveFormation(players.length, requestedFormation);
-  const formationOptions = getFormationOptions(players.length).map((o) => o.name);
-  const { starters, bench, mvp, captain } = assignRoles(players, formation.slots, owner);
-
-  // Pending valuations (fetch failed, no cache to fall back to) are excluded
-  // from the total rather than counted as €0.
+  // Computed ONCE here and carried in the object — no route or component ever
+  // re-derives it by summing partial valuations. Pending valuations (fetch
+  // failed, no cache to fall back to) are excluded from the total rather than
+  // counted as €0.
   const totalValue = players.reduce((sum, p) => sum + (p.marketValue ?? 0), 0);
   const pendingValuations = players.filter((p) => p.valuationPending).map((p) => p.login);
 
-  console.warn(`[squad] timing: getRepoSquad total ${Date.now() - totalStart}ms`);
+  console.warn(`[squad] timing: computeValuedSquad total ${Date.now() - totalStart}ms`);
+
+  return {
+    owner,
+    repo,
+    players,
+    reserves,
+    totalValue,
+    totalValueFormatted: formatMarketValue(totalValue),
+    pendingValuations,
+  };
+}
+
+// Applies a formation on top of the cached valued squad — pure, in-memory,
+// cheap (role/slot assignment only), so it runs per request without touching
+// the cache. Only the slot assignment depends on the formation; the roster,
+// valuations and total do not.
+function assembleSquad(valued: ValuedSquad, requestedFormation?: FormationName): Squad {
+  const { players, owner, repo } = valued;
+  const formation = resolveFormation(players.length, requestedFormation);
+  const formationOptions = getFormationOptions(players.length).map((o) => o.name);
+  const { starters, bench, mvp, captain } = assignRoles(players, formation.slots, owner);
 
   return {
     owner,
@@ -60,12 +99,12 @@ async function computeRepoSquad(owner: string, repo: string, requestedFormation?
     formationOptions,
     starters,
     bench,
-    reserves,
-    totalValue,
-    totalValueFormatted: formatMarketValue(totalValue),
+    reserves: valued.reserves,
+    totalValue: valued.totalValue,
+    totalValueFormatted: valued.totalValueFormatted,
     mvp,
     captain,
-    pendingValuations,
+    pendingValuations: valued.pendingValuations,
   };
 }
 
@@ -77,26 +116,30 @@ function squadCacheTag(owner: string, repo: string): string {
 // cachedOrDirectFetchValuation — see that file's comment. Tags need to be
 // per-repo, and unstable_cache's tags option is fixed at wrap time, so the
 // wrapper is (re)created per call rather than once at module scope — the
-// cache key itself (owner/repo/formation, via keyParts + args) stays
-// consistent across invocations regardless.
-export async function getRepoSquad(owner: string, repo: string, requestedFormation?: FormationName): Promise<Squad> {
-  const start = Date.now();
-  const cached = unstable_cache(computeRepoSquad, ["squad-repo-squad", owner, repo], {
+// cache key itself (owner/repo, via keyParts + args) stays consistent across
+// invocations regardless. Note the key deliberately has NO formation part:
+// see the ValuedSquad comment.
+async function getCachedValuedSquad(owner: string, repo: string): Promise<ValuedSquad> {
+  const cached = unstable_cache(computeValuedSquad, ["squad-repo-squad", owner, repo], {
     revalidate: SQUAD_CACHE_TTL_SECONDS,
     tags: [squadCacheTag(owner, repo)],
   });
   try {
-    const squad = await cached(owner, repo, requestedFormation);
-    console.warn(`[squad] timing: getRepoSquad (outer, incl. cache) ${Date.now() - start}ms`);
-    return squad;
+    return await cached(owner, repo);
   } catch (err) {
     if (err instanceof Error && err.message.includes("incrementalCache")) {
-      const squad = await computeRepoSquad(owner, repo, requestedFormation);
-      console.warn(`[squad] timing: getRepoSquad (outer, direct) ${Date.now() - start}ms`);
-      return squad;
+      return computeValuedSquad(owner, repo);
     }
     throw err;
   }
+}
+
+export async function getRepoSquad(owner: string, repo: string, requestedFormation?: FormationName): Promise<Squad> {
+  const start = Date.now();
+  const valued = await getCachedValuedSquad(owner, repo);
+  const squad = assembleSquad(valued, requestedFormation);
+  console.warn(`[squad] timing: getRepoSquad (outer, incl. cache) ${Date.now() - start}ms`);
+  return squad;
 }
 
 export interface SquadFormationParams {

@@ -57,13 +57,13 @@ export function SquadExportPanel({ owner, repo, formationQuery }: { owner: strin
     return `/api/og/squad/${owner}/${repo}?format=${f}&theme=${t}&${formationQuery}`;
   }
 
-  function svgPath(): string {
-    return `/api/svg/squad/${owner}/${repo}?${formationQuery}`;
+  function svgPath(t: Theme): string {
+    return `/api/svg/squad/${owner}/${repo}?theme=${t}&${formationQuery}`;
   }
 
   function imagePath(f: Format, t: Theme): string {
     if (f === "portrait" && readmeFormat === "svg") {
-      return svgPath();
+      return svgPath(t);
     }
     return pngPath(f, t);
   }
@@ -79,7 +79,7 @@ export function SquadExportPanel({ owner, repo, formationQuery }: { owner: strin
   async function copyMarkdown() {
     const host = getSiteUrl();
     const markdown = isSvgReadme
-      ? `[![${owner}/${repo} — Repo Squad by TransferGit](${host}${svgPath()})](${pageUrl()})`
+      ? `[![${owner}/${repo} — Repo Squad by TransferGit](${host}${svgPath(theme)})](${pageUrl()})`
       : `[![${owner}/${repo} squad — TransferGit](${host}${pngPath(format, theme)})](${pageUrl()})`;
     try {
       await navigator.clipboard.writeText(markdown);
@@ -149,143 +149,133 @@ export function SquadExportPanel({ owner, repo, formationQuery }: { owner: strin
 
   return (
     <div data-reveal="squad-export" className="relative overflow-hidden rounded-xl tm-card tm-card-green">
-      <div className="grid grid-cols-1 gap-8 p-6 md:grid-cols-2 md:p-10">
-        <div className="flex justify-center">
-          <div
-            className="glow-green-border relative overflow-hidden rounded-2xl border bg-surface"
-            style={{
-              width: "100%",
-              maxWidth: format === "portrait" ? 300 : format === "full" ? 260 : 380,
-              aspectRatio: format === "portrait" ? "4 / 5" : format === "full" ? "2 / 3" : "1200 / 630",
-            }}
-          >
-            {loadedKey !== previewKey && <div className="shimmer absolute inset-0" aria-hidden />}
-            {/* eslint-disable-next-line @next/next/no-img-element -- real unoptimized OG/SVG endpoint, preview must match the export exactly */}
-            <img
-              key={previewKey}
-              src={imagePath(format, theme)}
-              alt={`Preview of ${owner}/${repo} squad card`}
-              onLoad={() => setLoadedKey(previewKey)}
-              className={`h-full w-full object-contain transition-opacity duration-300 ${
-                loadedKey === previewKey ? "opacity-100" : "opacity-0"
+      <div className="flex flex-col gap-3 p-4">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-value-green">Export the squad</p>
+          <h2 className="mt-1 font-display text-lg uppercase leading-none tracking-tight">Flex the whole XI.</h2>
+          <p className="mt-1 truncate text-xs text-muted">
+            Auto-updates as contributors and market values change.
+          </p>
+        </div>
+
+        {/* Preview frame: CONSTANT size — full column width × the tallest
+            format's 2:3 aspect, always. The selected image is letterboxed
+            inside via object-contain, so switching README ↔ Social ↔ Full
+            squad never resizes the panel or shifts the controls below it. */}
+        <div className="glow-green-border relative w-full overflow-hidden rounded-xl border bg-surface" style={{ aspectRatio: "2 / 3" }}>
+          {loadedKey !== previewKey && <div className="shimmer absolute inset-0" aria-hidden />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- real unoptimized OG/SVG endpoint, preview must match the export exactly */}
+          <img
+            key={previewKey}
+            src={imagePath(format, theme)}
+            alt={`Preview of ${owner}/${repo} squad card`}
+            onLoad={() => setLoadedKey(previewKey)}
+            className={`h-full w-full object-contain transition-opacity duration-300 ${
+              loadedKey === previewKey ? "opacity-100" : "opacity-0"
+            }`}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.keys(FORMAT_META) as Format[]).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFormat(f)}
+              className={`rounded-full border px-2.5 py-1 font-mono text-[11px] transition ${
+                format === f ? "border-value-green text-value-green" : "border-border text-muted hover:text-foreground"
               }`}
-            />
+            >
+              {FORMAT_META[f].label} · {FORMAT_META[f].ratio}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(Object.keys(THEME_META) as Theme[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTheme(t)}
+              className={`rounded-full border px-2.5 py-1 font-mono text-[11px] transition ${
+                theme === t ? "border-value-green text-value-green" : "border-border text-muted hover:text-foreground"
+              }`}
+            >
+              {THEME_META[t].label}
+            </button>
+          ))}
+
+          <div
+            className="ml-auto inline-flex rounded-full border border-border p-0.5 font-mono text-[11px]"
+            title={format !== "portrait" ? "Dynamic SVG is only available for the README format" : undefined}
+          >
+            <button
+              type="button"
+              onClick={() => setReadmeFormat("svg")}
+              disabled={format !== "portrait"}
+              aria-pressed={readmeFormat === "svg"}
+              className={`rounded-full px-2.5 py-0.5 transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                readmeFormat === "svg" && format === "portrait"
+                  ? "bg-value-green text-pitch"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              SVG
+            </button>
+            <button
+              type="button"
+              onClick={() => setReadmeFormat("png")}
+              disabled={format !== "portrait"}
+              aria-pressed={readmeFormat === "png"}
+              className={`rounded-full px-2.5 py-0.5 transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                readmeFormat === "png" && format === "portrait"
+                  ? "bg-value-green text-pitch"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              PNG
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-col justify-center">
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-value-green">Export the squad</p>
-          <h2 className="mt-2 font-display text-2xl uppercase leading-[0.95] tracking-tight md:text-3xl">
-            Flex the whole XI.
-          </h2>
-          <p className="mt-3 max-w-sm text-sm text-muted">
-            Drop this in the repo&apos;s README — it updates on its own as contributors and market
-            values change, no re-upload needed.
-          </p>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {(Object.keys(FORMAT_META) as Format[]).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFormat(f)}
-                className={`rounded-full border px-3 py-1.5 font-mono text-xs transition ${
-                  format === f ? "border-value-green text-value-green" : "border-border text-muted hover:text-foreground"
-                }`}
-              >
-                {FORMAT_META[f].label} · {FORMAT_META[f].ratio}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-2 flex flex-wrap gap-2">
-            {(Object.keys(THEME_META) as Theme[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTheme(t)}
-                className={`rounded-full border px-3 py-1.5 font-mono text-xs transition ${
-                  theme === t ? "border-value-green text-value-green" : "border-border text-muted hover:text-foreground"
-                }`}
-              >
-                {THEME_META[t].label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3">
-            <div
-              className="inline-flex rounded-full border border-border p-0.5 font-mono text-xs"
-              title={format !== "portrait" ? "Dynamic SVG is only available for the README format" : undefined}
-            >
-              <button
-                type="button"
-                onClick={() => setReadmeFormat("svg")}
-                disabled={format !== "portrait"}
-                aria-pressed={readmeFormat === "svg"}
-                className={`rounded-full px-3 py-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                  readmeFormat === "svg" && format === "portrait"
-                    ? "bg-value-green text-pitch"
-                    : "text-muted hover:text-foreground"
-                }`}
-              >
-                Dynamic SVG
-              </button>
-              <button
-                type="button"
-                onClick={() => setReadmeFormat("png")}
-                disabled={format !== "portrait"}
-                aria-pressed={readmeFormat === "png"}
-                className={`rounded-full px-3 py-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                  readmeFormat === "png" && format === "portrait"
-                    ? "bg-value-green text-pitch"
-                    : "text-muted hover:text-foreground"
-                }`}
-              >
-                Static PNG
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={copyMarkdown}
-              className="glow-green flex w-full items-center justify-center gap-2 rounded-md bg-value-green px-4 py-2.5 font-display text-sm text-pitch transition hover:brightness-110"
-            >
-              {copiedAction === "markdown" ? <Check size={16} /> : <Copy size={16} />}
-              {copiedAction === "markdown" ? "Copied!" : "Copy Markdown"}
-            </button>
-            <p className="mt-2 text-xs text-muted">
-              {isSvgReadme
-                ? "Auto-updates as contributors join · give your contributors credit"
-                : "Embeds the format and theme selected above."}
-            </p>
-          </div>
-
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={downloadPng}
-              className="flex items-center justify-center gap-2 rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
-            >
-              <Download size={16} />
-              Download PNG
-            </button>
-            <button
-              type="button"
-              onClick={share}
-              className="flex items-center justify-center gap-2 rounded-md border border-border bg-surface-elevated px-4 py-2.5 text-sm font-medium transition hover:bg-border/40"
-            >
-              <Share2 size={16} />
-              Share
-            </button>
-          </div>
-
-          <p className="mt-4 font-mono text-xs text-muted">
-            {getSiteHost()}/squad/{owner}/{repo}
-          </p>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
+          <button
+            type="button"
+            onClick={copyMarkdown}
+            className="glow-green flex items-center justify-center gap-2 rounded-md bg-value-green px-3 py-2 font-display text-xs text-pitch transition hover:brightness-110"
+          >
+            {copiedAction === "markdown" ? <Check size={14} /> : <Copy size={14} />}
+            {copiedAction === "markdown" ? "Copied!" : "Copy Markdown"}
+          </button>
+          <button
+            type="button"
+            onClick={downloadPng}
+            aria-label="Download PNG"
+            title="Download PNG"
+            className="flex items-center justify-center rounded-md border border-border bg-surface-elevated px-3 py-2 transition hover:bg-border/40"
+          >
+            <Download size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={share}
+            aria-label="Share"
+            title="Share"
+            className="flex items-center justify-center rounded-md border border-border bg-surface-elevated px-3 py-2 transition hover:bg-border/40"
+          >
+            <Share2 size={15} />
+          </button>
         </div>
+
+        <p className="truncate text-[11px] text-muted">
+          {isSvgReadme
+            ? "Auto-updates as contributors join · give your contributors credit"
+            : "Embeds the format and theme selected above."}
+        </p>
+
+        <p className="truncate font-mono text-[10px] text-muted">
+          {getSiteHost()}/squad/{owner}/{repo}
+        </p>
       </div>
 
       {shareOpen && (

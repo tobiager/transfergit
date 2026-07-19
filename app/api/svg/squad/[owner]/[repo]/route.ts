@@ -20,6 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ owne
   const { owner, repo } = await params;
   const { searchParams } = new URL(request.url);
   const animate = searchParams.get("animate") !== "false";
+  const theme = searchParams.get("theme") === "grass" ? "grass" : "floodlight";
   // WYSIWYG: same ?formation=&base=&layout= the live page and the PNG
   // exports read — no params falls back to the default formation.
   const formationParams = {
@@ -37,7 +38,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ owne
       squad.starters.map((p) => p.avatarUrl),
       AVATAR_SIZE
     );
-    const svg = renderSquadCardSvg({ squad, siteHost: getSiteHost(), avatarDataUris, animate, logoDataUri });
+    const svg = renderSquadCardSvg({ squad, siteHost: getSiteHost(), avatarDataUris, animate, logoDataUri, theme });
 
     return new Response(svg, {
       headers: { "Content-Type": "image/svg+xml", "Cache-Control": CACHE_CONTROL },

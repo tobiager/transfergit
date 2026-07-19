@@ -80,57 +80,30 @@ export function clampToSafeArea(leftPct: number, topPct: number, small = false):
   };
 }
 
-// Broadcast-style landscape orientation: goalkeeper on the left, attack on
-// the right, like a pitch seen on TV. Vertical position reuses the same
-// touchline-to-touchline mapping pitchPosition() uses for its own left%
-// (x drives it either way — this is just relabeled top% here).
-//
-// Horizontal position is NOT a simple 1:1 transpose of y: the four y-bands
-// (lib/squad/formations.ts's FULL_BANDS: gk=0, def=22, mid=56, fwd=94)
-// aren't evenly spaced in raw units, so a linear "left = f(y)" formula
-// either crushes the defensive line against the center circle or leaves
-// the attacking third empty (both were real bugs here). Instead this is a
-// piecewise-linear fit through each band's raw y and its target left% —
-// GK ~8%, DEF ~30%, MID ~55%, FWD ~82% — so the XI actually fills the
-// pitch left-to-right instead of leaving the left half empty. CDM_BAND (40)
-// and CAM_BAND (76) fall between existing knots and interpolate sensibly
-// without needing their own entry.
-const LANDSCAPE_X_KNOTS: readonly [rawY: number, leftPercent: number][] = [
-  [0, 8],
-  [22, 30],
-  [56, 55],
-  [94, 82],
-];
+// Broadcast-style landscape orientation for the social export: goalkeeper on
+// the left, attack on the right, like a pitch seen on TV. This is a FAITHFUL
+// 90° rotation of the vertical pitch, so whatever arrangement is on screen —
+// a standard formation OR a hand-dragged custom layout — reflects at its true
+// relative position:
+//   - `left` (the attack axis) is a straight LINEAR map of y: a player twice
+//     as far up the pitch sits twice as far to the right. The old
+//     piecewise-knot remap only matched the four standard formation bands and
+//     distorted any custom drag (a player dragged to y=70 didn't land where
+//     the pitch put them). The linear map spans a comfortable range so the XI
+//     still fills the pitch left-to-right without crushing a line against the
+//     center circle.
+//   - `top` (the touchline axis) reuses the exact x → visual% mapping the
+//     vertical pitch already uses for its own left%.
+// No per-line zigzag: same-line members share y (so share `left`) but differ
+// in x (so differ in `top`) — the export's own chip height keeps that
+// vertical column separated, and staggering it would re-introduce the very
+// distortion this faithful rotation removes.
+const LANDSCAPE_LEFT_MIN = 9; // GK end (y = 0)
+const LANDSCAPE_LEFT_SPAN = 79; // → y = 100 lands at 88%
 
-function interpolateLandscapeLeft(y: number): number {
-  const knots = LANDSCAPE_X_KNOTS;
-  // Pick the segment [i, i+1] to interpolate within — clamped to the first
-  // or last segment when y falls outside the knots' own range (extrapolate
-  // along that segment's slope rather than clipping flat).
-  let i = 0;
-  while (i < knots.length - 2 && y > knots[i + 1][0]) i++;
-  const [y0, v0] = knots[i];
-  const [y1, v1] = knots[i + 1];
-  const t = (y - y0) / (y1 - y0);
-  return v0 + t * (v1 - v0);
-}
-
-// Every member of the same line (e.g. a back four) shares the same raw y,
-// so without this they'd land in a dead-straight vertical column on the
-// landscape canvas — tight enough that consecutive nameplates touch. A
-// subtle alternating left/right nudge (±4%) staggers them just enough that
-// adjacent chips sit on a diagonal instead of directly above/below each
-// other, on top of (not instead of) the real vertical spacing fix in the
-// export route's own chip sizing. `zigzagIndex` is each starter's index in
-// the formation's own slot order (see FORMATIONS/buildDegradedSlots in
-// formations.ts) — same-line members are always contiguous there, so
-// alternating by index naturally alternates within each line.
-const LANDSCAPE_ZIGZAG_PCT = 4;
-
-export function pitchPositionHorizontal(x: number, y: number, zigzagIndex = 0): { left: number; top: number } {
-  const zigzag = zigzagIndex % 2 === 0 ? LANDSCAPE_ZIGZAG_PCT : -LANDSCAPE_ZIGZAG_PCT;
+export function pitchPositionHorizontal(x: number, y: number): { left: number; top: number } {
   return {
-    left: clamp(interpolateLandscapeLeft(y) + zigzag, 0, 100),
+    left: LANDSCAPE_LEFT_MIN + (clamp(y, 0, 100) / 100) * LANDSCAPE_LEFT_SPAN,
     top: toVisualPercent(x, PITCH_INSET_X, PITCH_NUDGE_X),
   };
 }

@@ -1,8 +1,13 @@
 import type { Squad } from "../squad/types.ts";
 
+export type SquadSvgThemeName = "floodlight" | "grass";
+
 export interface SquadCardData {
   squad: Squad;
   siteHost: string;
+  // Which palette to render — mirrors the PNG exports' floodlight/grass
+  // toggle so the dynamic README SVG honours the same theme selection.
+  theme?: SquadSvgThemeName;
   // Base64 data URI per starter, keyed by avatarUrl. Missing/null falls
   // back to an initials circle instead of a broken image.
   avatarDataUris: Map<string, string | null>;

@@ -138,6 +138,61 @@ test("getRepoSquad values each player like their individual profile and sums the
   assert.equal(squad.captain.login, "alice");
 });
 
+test("the squad total is identical across formations and equals the cached full sum, never a per-route partial", async (t) => {
+  t.after(() => {
+    process.env.GITHUB_TOKEN = ORIGINAL_TOKEN;
+  });
+  process.env.GITHUB_TOKEN = "test-token";
+
+  // 11 contributors; 5 of them fail their profile query entirely (500, never
+  // recovers) → pending "—", excluded from the total. This is the Problem A
+  // scenario: the live page requests no formation, the exports request
+  // "433"/"442"/… — all must read the same total, computed once, not each
+  // re-summing whatever survived its own cold render.
+  const failing = new Set(["u2", "u4", "u6", "u8", "u10"]);
+  const fixtures: Fixture[] = Array.from({ length: 11 }, (_, i) => ({
+    login: `u${i}`,
+    repoCommits: 100 - i,
+    followers: (i + 1) * 3,
+    stars: i,
+    profileCommits: 10 + i,
+  }));
+  const byLogin = new Map(fixtures.map((f) => [f.login, f]));
+
+  (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
+    if (typeof url === "string" && url.includes("/contributors")) {
+      const body = fixtures.map((f) => ({ login: f.login, avatar_url: `https://avatars/${f.login}`, contributions: f.repoCommits, type: "User" }));
+      return { ok: true, status: 200, json: async () => body, text: async () => "" } as Response;
+    }
+    const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
+    if (failing.has(variables.login)) {
+      return { ok: false, status: 500, json: async () => ({}), text: async () => "boom" } as Response;
+    }
+    if (query.includes("lastYear")) {
+      return { ok: true, status: 200, json: async () => fullProfileGraphQL(byLogin.get(variables.login)!), text: async () => "" } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ data: { user: { createdAt: CREATED_AT } } }), text: async () => "" } as Response;
+  }) as typeof fetch;
+
+  const asPage = await getRepoSquad("acme", "widgets"); // no formation (live page)
+  const as433 = await getRepoSquad("acme", "widgets", "433"); // export default
+  const as442 = await getRepoSquad("acme", "widgets", "442"); // another export pill
+
+  // The total is formation-invariant and travels in the object.
+  assert.equal(asPage.totalValue, as433.totalValue, "page and 433 export must agree on the total");
+  assert.equal(as433.totalValue, as442.totalValue, "different formations must not change the total");
+  assert.equal(asPage.totalValueFormatted, as433.totalValueFormatted);
+
+  // And it equals the sum of only the 6 non-pending valuations — never a €0
+  // for the 5 failures, never a partial that excludes a survivor.
+  const nonPending = [asPage.captain, ...asPage.starters, ...asPage.bench].filter(
+    (p, i, arr) => arr.findIndex((q) => q.login === p.login) === i && !p.valuationPending
+  );
+  const expected = nonPending.reduce((sum, p) => sum + (p.marketValue ?? 0), 0);
+  assert.equal(asPage.totalValue, expected);
+  assert.equal(asPage.pendingValuations.length, 5, "the 5 failing logins are pending, excluded from the total");
+});
+
 test("only the top 30 contributors are valued — positions 31+ are unvalued reserves at zero extra cost", async (t) => {
   t.after(() => {
     process.env.GITHUB_TOKEN = ORIGINAL_TOKEN;

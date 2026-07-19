@@ -8,7 +8,11 @@ import type { SquadPlayer } from "@/lib/squad";
 export function PlayerPopoverCard({ player }: { player: SquadPlayer }) {
   return (
     <>
-      <p className="font-mono text-sm font-semibold text-foreground">@{player.login}</p>
+      {/* select-all + cursor-text: one click selects the whole username so it
+          can be copied straight from the popover — the pitch chip itself is a
+          drag handle, so its nameplate can't be text-selected without dragging
+          the player; this is the place to grab the name. */}
+      <p className="cursor-text select-all font-mono text-sm font-semibold text-foreground">@{player.login}</p>
 
       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <div>

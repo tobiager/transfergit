@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function SquadEmptyState({ owner, repo }: { owner: string; repo: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center lg:col-span-12">
+    <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
       <p className="font-display text-6xl">🟥</p>
       <h1 className="mt-4 font-display text-3xl font-extrabold md:text-4xl">
         Not enough players to field a squad
