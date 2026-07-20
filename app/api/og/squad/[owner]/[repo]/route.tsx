@@ -99,7 +99,11 @@ function benchHeightFraction(benchCount: number): number {
 const AVATAR_SIZE = 96;
 const BENCH_AVATAR_SIZE = 64;
 
-const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
+// max-age=300: the browser itself also caches for 5min — without it every
+// format/theme toggle in the export panel (a new URL each time) re-fetches
+// even a variant the user already viewed a moment ago, since max-age=0
+// forces revalidation on every request regardless of the shared s-maxage.
+const CACHE_CONTROL = "public, max-age=300, s-maxage=86400, stale-while-revalidate";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

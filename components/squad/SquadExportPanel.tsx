@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Copy, Download, Link2, Share2, X as XIcon } from "lucide-react";
 import { getSiteHost, getSiteUrl } from "@/lib/site-url";
 
@@ -147,6 +147,35 @@ export function SquadExportPanel({ owner, repo, formationQuery }: { owner: strin
 
   const previewKey = `${format}-${theme}-${readmeFormat}`;
 
+  // Background prefetch of every other format/theme variant once the panel
+  // mounts, starting from the selected one (already loading via the visible
+  // <img> below). Cache-Control on these routes now includes a browser
+  // max-age (see app/api/og/squad and app/api/svg/squad), so switching
+  // format/theme after this finishes hits the browser cache instead of
+  // waiting on a fresh render.
+  useEffect(() => {
+    const formats = Object.keys(FORMAT_META) as Format[];
+    const themes = Object.keys(THEME_META) as Theme[];
+    const others = formats.flatMap((f) => themes.map((t) => imagePath(f, t))).filter((path) => path !== imagePath(format, theme));
+
+    let cancelled = false;
+    (async () => {
+      for (const path of others) {
+        if (cancelled) return;
+        try {
+          // `priority` is a Chromium-only fetch hint (RequestInit), harmless no-op elsewhere.
+          await fetch(path, { priority: "low" } as RequestInit);
+        } catch {
+          // best-effort — a missed prefetch just means a normal load later
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately runs once per mount, not per format/theme change
+  }, []);
+
   return (
     <div data-reveal="squad-export" className="relative overflow-hidden rounded-xl tm-card tm-card-green">
       <div className="flex flex-col gap-3 p-4">
@@ -163,7 +192,14 @@ export function SquadExportPanel({ owner, repo, formationQuery }: { owner: strin
             inside via object-contain, so switching README ↔ Social ↔ Full
             squad never resizes the panel or shifts the controls below it. */}
         <div className="glow-green-border relative w-full overflow-hidden rounded-xl border bg-surface" style={{ aspectRatio: "2 / 3" }}>
-          {loadedKey !== previewKey && <div className="shimmer absolute inset-0" aria-hidden />}
+          {loadedKey !== previewKey && (
+            <div className="absolute inset-0">
+              <div className="shimmer absolute inset-0" aria-hidden />
+              <p className="absolute inset-x-0 bottom-3 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+                Rendering preview…
+              </p>
+            </div>
+          )}
           {/* eslint-disable-next-line @next/next/no-img-element -- real unoptimized OG/SVG endpoint, preview must match the export exactly */}
           <img
             key={previewKey}

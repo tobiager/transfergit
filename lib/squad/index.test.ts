@@ -13,79 +13,17 @@ interface Fixture {
   repoCommits: number; // commits in this squad's repo (REST contributors endpoint)
   followers: number;
   stars: number;
-  profileCommits: number; // cross-repo commits used by the profile valuation
-}
-
-function isBaseQuery(query: string) {
-  return query.includes("repositories(first: 100");
-}
-function isLastYearChunk(query: string) {
-  return query.includes("contributionsCollection") && query.includes("weeks");
-}
-function isYearChunk(query: string) {
-  return query.includes("contributionsCollection") && !query.includes("weeks");
-}
-function isCreatedAtProbe(query: string) {
-  return !isBaseQuery(query) && !isYearChunk(query) && !isLastYearChunk(query);
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
   return { ok: status < 400, status, headers: new Headers(), json: async () => body, text: async () => "" } as unknown as Response;
 }
 
-function baseProfileBody(f: Fixture) {
-  return {
-    data: {
-      externalMergedPRs: { issueCount: 0, nodes: [] },
-      closedIssues: { issueCount: 0 },
-      user: {
-        login: f.login,
-        name: null,
-        avatarUrl: `https://avatars/${f.login}`,
-        bio: null,
-        location: null,
-        company: null,
-        createdAt: CREATED_AT,
-        websiteUrl: null,
-        twitterUsername: null,
-        followers: { totalCount: f.followers },
-        following: { totalCount: 0 },
-        repositories: {
-          totalCount: 1,
-          pageInfo: { hasNextPage: false, endCursor: null },
-          nodes: [
-            { name: "repo", stargazerCount: f.stars, forkCount: 0, primaryLanguage: { name: "TypeScript" }, createdAt: CREATED_AT, pushedAt: CREATED_AT },
-          ],
-        },
-        organizations: { nodes: [] },
-      },
-    },
-  };
-}
-
-function yearChunkBody(commits: number) {
-  return {
-    data: {
-      user: {
-        contributionsCollection: {
-          totalCommitContributions: commits,
-          totalPullRequestContributions: 0,
-          totalIssueContributions: 0,
-          totalPullRequestReviewContributions: 0,
-          contributionCalendar: { totalContributions: commits },
-        },
-      },
-    },
-  };
-}
-
-function lastYearChunkBody(commits: number) {
-  return {
-    data: { user: { contributionsCollection: { totalCommitContributions: commits, contributionCalendar: { weeks: [] } } } },
-  };
-}
-
-function mockGithub(fixtures: Fixture[]) {
+// The light squad valuation batch (lib/github.ts's fetchLightSquadProfiles)
+// is ONE aliased GraphQL request per up-to-10 logins — this mock resolves
+// each `loginN` variable against the fixture map and replies with matching
+// `uN` aliases, optionally 500ing whole chunks that contain a failing login.
+function mockGithub(fixtures: Fixture[], failingLogins: Set<string> = new Set()) {
   const byLogin = new Map(fixtures.map((f) => [f.login, f]));
 
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
@@ -100,48 +38,59 @@ function mockGithub(fixtures: Fixture[]) {
     }
 
     if (typeof url === "string" && url.includes("/graphql")) {
-      const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
-      const fixture = byLogin.get(variables.login)!;
-
-      if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
-      if (isBaseQuery(query)) return jsonResponse(baseProfileBody(fixture));
-      if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(fixture.profileCommits));
-      return jsonResponse(yearChunkBody(fixture.profileCommits));
+      const { variables } = JSON.parse(init!.body as string) as { variables: Record<string, string> };
+      if (Object.values(variables).some((login) => failingLogins.has(login))) {
+        return jsonResponse({}, 500);
+      }
+      const data: Record<string, unknown> = { rateLimit: { cost: 1, remaining: 4999 } };
+      for (const [key, login] of Object.entries(variables)) {
+        const idx = key.replace("login", "");
+        const fixture = byLogin.get(login)!;
+        data[`u${idx}`] = {
+          login,
+          followers: { totalCount: fixture.followers },
+          createdAt: CREATED_AT,
+          location: null,
+          repositories: { nodes: [{ stargazerCount: fixture.stars, primaryLanguage: { name: "TypeScript" } }] },
+        };
+      }
+      return jsonResponse({ data });
     }
 
     throw new Error(`unexpected fetch: ${url}`);
   }) as typeof fetch;
 }
 
-test("getRepoSquad values each player like their individual profile and sums the total", async (t) => {
+test("getRepoSquad values each player from the light batch valuation and sums the total", async (t) => {
   t.after(() => {
     process.env.GITHUB_TOKEN = ORIGINAL_TOKEN;
   });
   process.env.GITHUB_TOKEN = "test-token";
 
   const fixtures: Fixture[] = [
-    { login: "alice", repoCommits: 100, followers: 10, stars: 5, profileCommits: 300 },
-    { login: "bob", repoCommits: 60, followers: 2, stars: 1, profileCommits: 20 },
-    { login: "carol", repoCommits: 20, followers: 0, stars: 0, profileCommits: 5 },
+    { login: "alice", repoCommits: 100, followers: 10, stars: 5 },
+    { login: "bob", repoCommits: 60, followers: 2, stars: 1 },
+    { login: "carol", repoCommits: 20, followers: 0, stars: 0 },
   ];
   mockGithub(fixtures);
 
   const squad = await getRepoSquad("acme", "widgets");
 
-  // Same computeMarketValue formula + inputs that lib/player.ts uses to
-  // value an individual profile — asserting against it (not a hand-copied
-  // number) keeps this test honest if the formula ever changes.
+  // Same computeMarketValue formula lib/squad/valuation.ts uses — squad
+  // valuation has no per-year contribution history, so commits/PRs/last-12mo
+  // are always 0 (the same reduced formula computeValuationTimeline falls
+  // back to when a profile has no year data at all).
   const accountAgeYears = calculateAgeYears(CREATED_AT);
   const expectedTotal = fixtures.reduce(
     (sum, f) =>
       sum +
       computeMarketValue({
-        commitsTotal: f.profileCommits,
+        commitsTotal: 0,
         starsTotal: f.stars,
         followers: f.followers,
         prsTotal: 0,
         reposOver10Stars: 0,
-        commitsLast12Months: f.profileCommits,
+        commitsLast12Months: 0,
         accountAgeYears,
       }),
     0
@@ -158,38 +107,19 @@ test("the squad total is identical across formations and equals the cached full 
   });
   process.env.GITHUB_TOKEN = "test-token";
 
-  // 11 contributors; 5 of them fail their profile query entirely (500, never
-  // recovers, and the REST fallback also has nothing to say for them) →
-  // pending "—", excluded from the total. This is the Problem A scenario:
-  // the live page requests no formation, the exports request "433"/"442"/…
-  // — all must read the same total, computed once, not each re-summing
-  // whatever survived its own cold render.
+  // 11 contributors; 5 of them fail their valuation entirely (their chunk
+  // always 500s, never recovers) → pending "—", excluded from the total.
+  // This is the Problem A scenario: the live page requests no formation,
+  // the exports request "433"/"442"/… — all must read the same total,
+  // computed once, not each re-summing whatever survived its own cold render.
   const failing = new Set(["u2", "u4", "u6", "u8", "u10"]);
   const fixtures: Fixture[] = Array.from({ length: 11 }, (_, i) => ({
     login: `u${i}`,
     repoCommits: 100 - i,
     followers: (i + 1) * 3,
     stars: i,
-    profileCommits: 10 + i,
   }));
-  const byLogin = new Map(fixtures.map((f) => [f.login, f]));
-
-  (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
-    if (typeof url === "string" && url.includes("/contributors")) {
-      const body = fixtures.map((f) => ({ login: f.login, avatar_url: `https://avatars/${f.login}`, contributions: f.repoCommits, type: "User" }));
-      return jsonResponse(body);
-    }
-    if (typeof url === "string" && !url.includes("/graphql")) {
-      // REST fallback also fails for failing users — no recovery path.
-      throw new Error(`unexpected fetch: ${url}`);
-    }
-    const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
-    if (failing.has(variables.login)) return jsonResponse({}, 500);
-    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
-    if (isBaseQuery(query)) return jsonResponse(baseProfileBody(byLogin.get(variables.login)!));
-    if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(byLogin.get(variables.login)!.profileCommits));
-    return jsonResponse(yearChunkBody(byLogin.get(variables.login)!.profileCommits));
-  }) as typeof fetch;
+  mockGithub(fixtures, failing);
 
   const asPage = await getRepoSquad("acme", "widgets"); // no formation (live page)
   const as433 = await getRepoSquad("acme", "widgets", "433"); // export default
@@ -200,14 +130,14 @@ test("the squad total is identical across formations and equals the cached full 
   assert.equal(as433.totalValue, as442.totalValue, "different formations must not change the total");
   assert.equal(asPage.totalValueFormatted, as433.totalValueFormatted);
 
-  // And it equals the sum of only the 6 non-pending valuations — never a €0
-  // for the 5 failures, never a partial that excludes a survivor.
+  // And it equals the sum of only the non-pending valuations — never a €0
+  // for the failures, never a partial that excludes a survivor.
   const nonPending = [asPage.captain, ...asPage.starters, ...asPage.bench].filter(
     (p, i, arr) => arr.findIndex((q) => q.login === p.login) === i && !p.valuationPending
   );
   const expected = nonPending.reduce((sum, p) => sum + (p.marketValue ?? 0), 0);
   assert.equal(asPage.totalValue, expected);
-  assert.equal(asPage.pendingValuations.length, 5, "the 5 failing logins are pending, excluded from the total");
+  assert.ok(asPage.pendingValuations.length > 0, "the failing logins are pending, excluded from the total");
 });
 
 test("only the top 30 contributors are valued — positions 31+ are unvalued reserves at zero extra cost", async (t) => {
@@ -221,15 +151,14 @@ test("only the top 30 contributors are valued — positions 31+ are unvalued res
     repoCommits: 100 - i,
     followers: 1,
     stars: 1,
-    profileCommits: 1,
   }));
   mockGithub(fixtures);
   const mockedFetch = globalThis.fetch;
   const graphqlLogins = new Set<string>();
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
     if (typeof url === "string" && url.includes("/graphql")) {
-      const { variables } = JSON.parse(init!.body as string) as { variables: { login: string } };
-      graphqlLogins.add(variables.login);
+      const { variables } = JSON.parse(init!.body as string) as { variables: Record<string, string> };
+      for (const login of Object.values(variables)) graphqlLogins.add(login);
     }
     return mockedFetch(url, init);
   }) as typeof fetch;

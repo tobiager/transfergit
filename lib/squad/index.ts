@@ -112,6 +112,14 @@ function squadCacheTag(owner: string, repo: string): string {
   return `squad:${owner}/${repo}`;
 }
 
+// Request coalescing: the live page's own SSR and an export route (OG PNG,
+// SVG) commonly ask for the same repo within moments of each other — before
+// either one's unstable_cache write has landed, so both used to miss the
+// 6h cache and independently re-run fetchTopContributors + valuateContributors
+// (and every GitHub call inside it) a second time. Keyed by owner/repo,
+// same shape as lib/github.ts's profileInFlight/lightBatchInFlight.
+const valuedSquadInFlight = new Map<string, Promise<ValuedSquad>>();
+
 // Same "no Next runtime in node --test" fallback as valuation.ts's
 // cachedOrDirectFetchValuation — see that file's comment. Tags need to be
 // per-repo, and unstable_cache's tags option is fixed at wrap time, so the
@@ -120,18 +128,30 @@ function squadCacheTag(owner: string, repo: string): string {
 // invocations regardless. Note the key deliberately has NO formation part:
 // see the ValuedSquad comment.
 async function getCachedValuedSquad(owner: string, repo: string): Promise<ValuedSquad> {
+  const key = `${owner}/${repo}`;
+  const existing = valuedSquadInFlight.get(key);
+  if (existing) {
+    console.warn(`[squad] coalesced: ${key}`);
+    return existing;
+  }
+
   const cached = unstable_cache(computeValuedSquad, ["squad-repo-squad", owner, repo], {
     revalidate: SQUAD_CACHE_TTL_SECONDS,
     tags: [squadCacheTag(owner, repo)],
   });
-  try {
-    return await cached(owner, repo);
-  } catch (err) {
-    if (err instanceof Error && err.message.includes("incrementalCache")) {
-      return computeValuedSquad(owner, repo);
+  const promise = (async () => {
+    try {
+      return await cached(owner, repo);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("incrementalCache")) {
+        return computeValuedSquad(owner, repo);
+      }
+      throw err;
     }
-    throw err;
-  }
+  })().finally(() => valuedSquadInFlight.delete(key));
+
+  valuedSquadInFlight.set(key, promise);
+  return promise;
 }
 
 export async function getRepoSquad(owner: string, repo: string, requestedFormation?: FormationName): Promise<Squad> {

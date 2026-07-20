@@ -1,27 +1,9 @@
 import "server-only";
-import { getGithubProfile, getLastGithubRateLimitStatus } from "../github.ts";
-import { computeValuationTimeline } from "../valuation.ts";
-import { computePosition } from "../positions.ts";
+import { fetchLightSquadProfiles, getLastGithubRateLimitStatus, type LightGithubProfile } from "../github.ts";
+import { computeMarketValue } from "../valuation.ts";
+import { formatMarketValue, calculateAgeYears } from "../format.ts";
 import { resolveNationality } from "../geo.ts";
-import { mapWithConcurrency } from "../concurrency.ts";
 import type { Contributor, ContributorValuation } from "./types.ts";
-
-// Each valuation is one getGithubProfile call — which itself already fans
-// out into several small chunked GraphQL requests run with its own bounded
-// concurrency (see lib/github.ts) — so this governs how many CONTRIBUTORS
-// are in flight at once, not raw request count. Kept generous since
-// getGithubProfile's own cache + coalescing absorbs duplicate/overlapping
-// work across concurrent renders.
-const CONCURRENCY = 6;
-
-interface ValuationTally {
-  cache: number;
-  fetch: number;
-  fallback: number;
-}
-// ponytail: no hit/miss signal is exposed for getGithubProfile's internal
-// caches, so a cache hit (fresh OR stale-served) is inferred from latency.
-const CACHE_LATENCY_THRESHOLD_MS = 50;
 
 // A contributor account that genuinely has no valuation data (org/deleted
 // account still listed as a REST contributor) — a real €0, not a failure.
@@ -55,81 +37,80 @@ function pendingValuation(login: string): ContributorValuation {
   };
 }
 
-function toContributorValuation(
-  login: string,
-  profile: NonNullable<Awaited<ReturnType<typeof getGithubProfile>>>
-): ContributorValuation {
-  const { topLanguage } = computePosition(profile.repositories);
+// Squad valuation deliberately has no per-year contribution history (that's
+// the deep /[username] pipeline's job, see lib/github.ts's getGithubProfile)
+// — commitsTotal/prsTotal/commitsLast12Months are always 0 here, same
+// reduced formula computeValuationTimeline already falls back to when a
+// profile has no year data at all.
+function toContributorValuation(login: string, profile: LightGithubProfile): ContributorValuation {
   const nationality = resolveNationality(profile.location);
-  const valuation = computeValuationTimeline(profile);
-  const starsTotal = profile.repositories.reduce((sum, r) => sum + r.stars, 0);
+  const marketValue = computeMarketValue({
+    commitsTotal: 0,
+    starsTotal: profile.starsTotal,
+    followers: profile.followers,
+    prsTotal: 0,
+    reposOver10Stars: profile.reposOver10Stars,
+    commitsLast12Months: 0,
+    accountAgeYears: calculateAgeYears(profile.createdAt),
+  });
 
   return {
     login,
     followers: profile.followers,
-    starsTotal,
-    mainLanguage: topLanguage,
+    starsTotal: profile.starsTotal,
+    mainLanguage: profile.topLanguage,
     countryName: nationality.countryName,
     countryIso2: nationality.iso2,
-    marketValue: valuation.current,
-    marketValueFormatted: valuation.currentFormatted,
+    marketValue,
+    marketValueFormatted: formatMarketValue(marketValue),
   };
-}
-
-// A contributor's market value, from the SAME shared, cached, coalesced
-// profile fetcher every other route uses (getGithubProfile — see
-// lib/github.ts): chunked GraphQL, REST-degraded last resort, 24h/10min
-// two-tier caching and stale-on-error already happen there, so this doesn't
-// duplicate any of it. A genuinely-missing/org account resolves to a real
-// €0 (not a failure); getGithubProfile throwing (GraphQL AND REST both
-// down, or an unrecoverable GITHUB_TOKEN config error) is the only path
-// that reaches the caller's own stale-known-good/pending fallback below.
-export async function fetchValuation(login: string): Promise<ContributorValuation> {
-  const profile = await getGithubProfile(login);
-  return profile ? toContributorValuation(login, profile) : zeroValuation(login);
 }
 
 // Same-process fast path: the last valuation that actually succeeded for a
 // login, kept only for this server instance's lifetime — a second line of
-// defense for whenever getGithubProfile's own stale-on-error has nothing
-// (a login that has never once succeeded from this instance).
+// defense for whenever the light batch fetch (lib/github.ts) hard-fails
+// (GraphQL down, not just a missing user).
 const lastKnownGood = new Map<string, ContributorValuation>();
 
-// Request coalescing across concurrent renders asking for the same login at
-// the same time. getGithubProfile already coalesces the underlying profile
-// fetch itself, so this is a thin extra layer over the (cheap) valuation
-// math, not a duplicate of the network-level coalescing.
-const inFlight = new Map<string, Promise<ContributorValuation>>();
-
-function valuateOne(login: string, tally: ValuationTally): Promise<ContributorValuation> {
-  const existing = inFlight.get(login);
-  if (existing) return existing;
-
-  const start = Date.now();
-  const promise = fetchValuation(login)
-    .then((valuation) => {
-      tally[Date.now() - start < CACHE_LATENCY_THRESHOLD_MS ? "cache" : "fetch"]++;
-      lastKnownGood.set(login, valuation);
-      return valuation;
-    })
-    .catch((err) => {
-      if (err instanceof Error && err.message.includes("GITHUB_TOKEN")) throw err;
-      tally.fallback++;
-      return lastKnownGood.get(login) ?? pendingValuation(login);
-    })
-    .finally(() => inFlight.delete(login));
-
-  inFlight.set(login, promise);
-  return promise;
-}
-
+// A contributor's market value, from the shared light batch fetcher every
+// squad valuation goes through (fetchLightSquadProfiles — see lib/github.ts):
+// aliased GraphQL batching, 24h caching and coalescing already happen
+// there. A genuinely-missing/org account resolves to a real €0 (not a
+// failure); a hard failure falls back to this instance's lastKnownGood, or
+// pendingValuation as the last resort.
 export async function valuateContributors(contributors: Contributor[]): Promise<ContributorValuation[]> {
   const start = Date.now();
-  const tally: ValuationTally = { cache: 0, fetch: 0, fallback: 0 };
-  const results = await mapWithConcurrency(contributors, CONCURRENCY, (c) => valuateOne(c.login, tally));
+  let zero = 0;
+  let fallback = 0;
+
+  let profiles: Map<string, LightGithubProfile | null>;
+  try {
+    profiles = await fetchLightSquadProfiles(contributors.map((c) => c.login));
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("GITHUB_TOKEN")) throw err;
+    profiles = new Map();
+  }
+
+  const results = contributors.map((c) => {
+    const profile = profiles.get(c.login);
+    if (profile) {
+      const valuation = toContributorValuation(c.login, profile);
+      lastKnownGood.set(c.login, valuation);
+      return valuation;
+    }
+    if (profiles.has(c.login)) {
+      // Fetched successfully, but the login genuinely doesn't resolve to a
+      // user (org/deleted account still listed as a REST contributor).
+      zero++;
+      return zeroValuation(c.login);
+    }
+    fallback++;
+    return lastKnownGood.get(c.login) ?? pendingValuation(c.login);
+  });
+
   const budget = getLastGithubRateLimitStatus();
   console.warn(
-    `[squad] valuations: ${tally.cache} cache, ${tally.fetch} fetch, ${tally.fallback} fallback (of ${contributors.length})` +
+    `[squad] valuations: ${results.length - zero - fallback} fetched, ${zero} zero, ${fallback} fallback (of ${contributors.length})` +
       (budget ? ` — GitHub budget ${budget.remaining}/${budget.limit}` : "")
   );
   console.warn(`[squad] timing: valuation ${Date.now() - start}ms`);

@@ -14,7 +14,9 @@ const AVATAR_SIZE = 64;
 // s-maxage=43200: shared caches (camo, CDN) may serve a cached copy for 12h.
 // stale-while-revalidate=86400: for up to 24h after that, stale copies keep
 // serving instantly while a fresh render happens in the background.
-const CACHE_CONTROL = "public, max-age=0, s-maxage=43200, stale-while-revalidate=86400";
+// max-age=300: the browser itself also caches for 5min — see the OG PNG
+// squad route's identical comment (app/api/og/squad/[owner]/[repo]/route.tsx).
+const CACHE_CONTROL = "public, max-age=300, s-maxage=43200, stale-while-revalidate=86400";
 const NOT_FOUND_CACHE_CONTROL = "public, max-age=0, s-maxage=60";
 const RATE_LIMITED_CACHE_CONTROL = "public, max-age=0, s-maxage=30";
 

@@ -22,7 +22,10 @@ const STAR_WEIGHT = 4_000;
 const FOLLOWER_WEIGHT = 6_000;
 const PR_WEIGHT = 2_500;
 const POPULAR_REPO_WEIGHT = 25_000;
-const POPULAR_REPO_STAR_THRESHOLD = 10;
+// Exported: also used by lib/squad/valuation.ts's light batch valuation,
+// which counts "popular repos" from its own reduced GraphQL fetch without
+// going through computeValuationTimeline.
+export const POPULAR_REPO_STAR_THRESHOLD = 10;
 
 const FORM_WINDOW_COMMITS = 2_000;
 const FORM_MULTIPLIER_CAP = 0.5;

@@ -2,6 +2,8 @@ import "server-only";
 import { unstable_cache } from "next/cache.js";
 import { withGithubGate } from "./githubGate.ts";
 import { mapWithConcurrency } from "./concurrency.ts";
+import { computePosition } from "./positions.ts";
+import { POPULAR_REPO_STAR_THRESHOLD } from "./valuation.ts";
 import type { ContributionDay, GithubOrg, GithubProfile, GithubRepo, WorldCupRepo, YearContribution } from "./types";
 
 const GITHUB_GRAPHQL_ENDPOINT = "https://api.github.com/graphql";
@@ -236,6 +238,14 @@ function cacheStableNow(): Date {
 // GithubQueryTooExpensiveError (that's bisection's job, in
 // fetchContributionWindow) or for a genuinely missing user.
 const RATE_LIMIT_BACKOFFS_MS = [2000, 8000, 30000];
+// Secondary (abuse-detection) limits recover in seconds, but GitHub's own
+// Retry-After header for them is often a conservative flat 60s — honoring
+// it verbatim (as primary-limit handling correctly does) can block a single
+// render for up to 3 minutes across the retry ladder. A short fixed ladder
+// with jitter clears real secondary limits far faster and keeps a render
+// from ever waiting on a long retry.
+const SECONDARY_RATE_LIMIT_BACKOFFS_MS = [5000, 15000, 45000];
+const SECONDARY_BACKOFF_JITTER_MS = 1000;
 
 async function withRateLimitRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt++) {
@@ -243,8 +253,11 @@ async function withRateLimitRetry<T>(label: string, fn: () => Promise<T>): Promi
       return await fn();
     } catch (err) {
       if (!(err instanceof GithubRateLimitError) || attempt >= RATE_LIMIT_BACKOFFS_MS.length) throw err;
-      const waitMs = err.retryAfterSeconds != null ? err.retryAfterSeconds * 1000 : RATE_LIMIT_BACKOFFS_MS[attempt];
-      console.warn(`[github] ${label}: ${err.kind} rate limit, retrying in ${waitMs}ms (attempt ${attempt + 1}/${RATE_LIMIT_BACKOFFS_MS.length})`);
+      const waitMs =
+        err.kind === "secondary"
+          ? SECONDARY_RATE_LIMIT_BACKOFFS_MS[attempt] + Math.random() * SECONDARY_BACKOFF_JITTER_MS
+          : (err.retryAfterSeconds != null ? err.retryAfterSeconds * 1000 : RATE_LIMIT_BACKOFFS_MS[attempt]);
+      console.warn(`[github] ${label}: ${err.kind} rate limit, retrying in ${Math.round(waitMs)}ms (attempt ${attempt + 1}/${RATE_LIMIT_BACKOFFS_MS.length})`);
       await sleep(waitMs);
     }
   }
@@ -1062,9 +1075,11 @@ const cachedOrDirectAttemptProfile = withDirectFallback(cachedAttemptProfile, at
 // so a later partial render can't regress a known-good complete profile.
 const lastKnownGoodProfile = new Map<string, GithubProfile>();
 
-// Request coalescing: concurrent callers (the page, an OG export, an SVG
-// export, a squad valuation) asking for the same login at the same time
-// share one in-flight fetch instead of each starting their own.
+// Request coalescing: concurrent callers (the /[username] page and its
+// OG/SVG exports) asking for the same login at the same time share one
+// in-flight fetch instead of each starting their own. NOT used by squad
+// valuation anymore — see fetchLightSquadProfiles below, which is the deep
+// chunked-per-year pipeline's lightweight sibling for Repo Squad.
 const profileInFlight = new Map<string, Promise<GithubProfile | null>>();
 
 // The one fetching entrypoint every route should use: chunked + bisected
@@ -1073,7 +1088,10 @@ const profileInFlight = new Map<string, Promise<GithubProfile | null>>();
 // duplicated per caller.
 export function getGithubProfile(login: string): Promise<GithubProfile | null> {
   const existing = profileInFlight.get(login);
-  if (existing) return existing;
+  if (existing) {
+    console.warn(`[github] coalesced: ${login}`);
+    return existing;
+  }
 
   const promise = cachedOrDirectAttemptProfile(login)
     .then((profile) => {
@@ -1093,4 +1111,168 @@ export function getGithubProfile(login: string): Promise<GithubProfile | null> {
 
   profileInFlight.set(login, promise);
   return promise;
+}
+
+// ---------------------------------------------------------------------------
+// Light squad valuation batch — the SEPARATE, cheap sibling of the deep
+// chunked-per-year profile pipeline above. Repo Squad only needs current
+// followers/stars/language, never contribution history, so it must never
+// go through getGithubProfile (which fans out into ~15-20 requests per
+// contributor for the yearly chunks). Up to LIGHT_PROFILE_BATCH_SIZE logins
+// share ONE GraphQL request via aliases — a 30-contributor squad costs ~3
+// requests total instead of hundreds.
+// ---------------------------------------------------------------------------
+
+export interface LightGithubProfile {
+  login: string;
+  followers: number;
+  createdAt: string;
+  location: string | null;
+  starsTotal: number;
+  reposOver10Stars: number;
+  topLanguage: string | null;
+}
+
+// GitHub aliases a query field per user; each alias gets its own $loginN
+// variable rather than interpolating the login into the query string.
+const LIGHT_PROFILE_BATCH_SIZE = 10;
+const LIGHT_PROFILE_CACHE_TTL_SECONDS = 86400;
+
+interface LightRepoNode {
+  stargazerCount: number;
+  primaryLanguage: { name: string } | null;
+}
+
+interface LightUserNode {
+  login: string;
+  followers: { totalCount: number } | null;
+  createdAt: string;
+  location: string | null;
+  repositories: { nodes: LightRepoNode[] } | null;
+}
+
+type LightBatchResponse = RateLimitInfo & Record<string, LightUserNode | null>;
+
+function buildLightBatchQuery(logins: string[]): { query: string; variables: Record<string, string> } {
+  const variables: Record<string, string> = {};
+  const params: string[] = [];
+  const aliases = logins.map((login, i) => {
+    variables[`login${i}`] = login;
+    params.push(`$login${i}: String!`);
+    return `u${i}: user(login: $login${i}) {
+      login
+      followers { totalCount }
+      createdAt
+      location
+      repositories(first: 100, ownerAffiliations: OWNER, isFork: false, orderBy: { field: STARGAZERS, direction: DESC }) {
+        nodes { stargazerCount primaryLanguage { name } }
+      }
+    }`;
+  });
+  return {
+    query: `query(${params.join(", ")}) { rateLimit { cost remaining } ${aliases.join("\n")} }`,
+    variables,
+  };
+}
+
+// One aliased GraphQL request for up to LIGHT_PROFILE_BATCH_SIZE logins.
+// Raw + uncached — cachedLightProfileBatch below wraps it for cross-request
+// reuse, keyed on the exact login list (stable across repeat visits since a
+// repo's contributor batches are chunked in the same order every time).
+async function fetchLightProfileBatchRaw(logins: string[]): Promise<Array<LightGithubProfile | null>> {
+  const { query, variables } = buildLightBatchQuery(logins);
+  const data = await withRateLimitRetry(`light batch (${logins.length})`, () =>
+    githubGraphQL<LightBatchResponse>(query, variables)
+  );
+  logQueryCost(`light batch (${logins.length})`, data);
+
+  return logins.map((login, i) => {
+    const user = data[`u${i}`];
+    if (!user) return null;
+    const repos = user.repositories?.nodes ?? [];
+    const starsTotal = repos.reduce((sum, r) => sum + r.stargazerCount, 0);
+    const reposOver10Stars = repos.filter((r) => r.stargazerCount > POPULAR_REPO_STAR_THRESHOLD).length;
+    // computePosition only reads .language/.stars — the other GithubRepo
+    // fields are irrelevant here and filled with harmless placeholders so
+    // the same weighting logic (incl. excluding markup langs) is reused
+    // instead of reimplemented.
+    const fakeRepos: GithubRepo[] = repos.map((r) => ({
+      name: "",
+      stars: r.stargazerCount,
+      forks: 0,
+      language: r.primaryLanguage?.name ?? null,
+      createdAt: user.createdAt,
+      pushedAt: user.createdAt,
+    }));
+    const { topLanguage } = computePosition(fakeRepos);
+
+    return {
+      login: user.login,
+      followers: user.followers?.totalCount ?? 0,
+      createdAt: user.createdAt,
+      location: user.location,
+      starsTotal,
+      reposOver10Stars,
+      topLanguage: fakeRepos.length > 0 ? topLanguage : null,
+    };
+  });
+}
+
+const cachedLightProfileBatch = unstable_cache(fetchLightProfileBatchRaw, ["squad-light-profile-batch"], {
+  revalidate: LIGHT_PROFILE_CACHE_TTL_SECONDS,
+});
+const cachedOrDirectLightProfileBatch = withDirectFallback(cachedLightProfileBatch, fetchLightProfileBatchRaw);
+
+// Coalescing for identical concurrent batches (e.g. the squad page's own SSR
+// and an export route both requesting the same repo's roster at once) —
+// same shape as profileInFlight above, keyed by the batch's login list.
+const lightBatchInFlight = new Map<string, Promise<Array<LightGithubProfile | null>>>();
+
+async function fetchLightProfileChunk(logins: string[]): Promise<Array<LightGithubProfile | null>> {
+  const key = logins.join(",");
+  const existing = lightBatchInFlight.get(key);
+  if (existing) {
+    console.warn(`[github] coalesced: light batch (${logins.length})`);
+    return existing;
+  }
+
+  const promise = cachedOrDirectLightProfileBatch(logins).finally(() => lightBatchInFlight.delete(key));
+  lightBatchInFlight.set(key, promise);
+  return promise;
+}
+
+// The entrypoint lib/squad/valuation.ts uses for every Repo Squad
+// valuation — chunks the roster into aliased batches of
+// LIGHT_PROFILE_BATCH_SIZE and runs a few of those chunks concurrently
+// (the process-wide githubGate still bounds actual request concurrency).
+export async function fetchLightSquadProfiles(logins: string[]): Promise<Map<string, LightGithubProfile | null>> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < logins.length; i += LIGHT_PROFILE_BATCH_SIZE) {
+    chunks.push(logins.slice(i, i + LIGHT_PROFILE_BATCH_SIZE));
+  }
+
+  // A chunk that hard-fails (rate limit exhausted, network error) must not
+  // sink every OTHER chunk's already-successful data — mapWithConcurrency's
+  // Promise.all would otherwise reject the whole batch over one bad chunk.
+  // Caught here as `null` (distinct from a per-login array, see below) so
+  // lib/squad/valuation.ts's lastKnownGood/pending fallback applies, instead
+  // of every login in a failed chunk being misread as "genuinely no user".
+  const CHUNK_CONCURRENCY = 3;
+  const results = await mapWithConcurrency(chunks, CHUNK_CONCURRENCY, async (chunk) => {
+    try {
+      return await fetchLightProfileChunk(chunk);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("GITHUB_TOKEN")) throw err;
+      console.warn(`[github] light batch (${chunk.length}) failed, falling back per-login: ${(err as Error).message}`);
+      return null;
+    }
+  });
+
+  const map = new Map<string, LightGithubProfile | null>();
+  chunks.forEach((chunk, i) => {
+    const chunkResult = results[i];
+    if (chunkResult === null) return; // leave these logins absent from the map — caller distinguishes "unknown" from "no user"
+    chunk.forEach((login, j) => map.set(login, chunkResult[j]));
+  });
+  return map;
 }
