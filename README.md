@@ -94,6 +94,13 @@ npm i && npm run dev
 
 The **legends dataset** (`data/legends.json`) is a snapshot of real profiles used for percentile ranking. A daily GitHub Action (`.github/workflows/update-legends.yml`) re-fetches everyone in `data/legends-list.json` and commits the fresh snapshot — so your rank moves as legends' stats move, without anyone touching the site.
 
+## Documentation
+
+Deep-dive docs live in [`/docs`](docs/): [architecture](docs/architecture.md), [Repo Squad pipeline](docs/squad.md),
+[market value formula](docs/market-value.md), [exports](docs/exports.md),
+[caching & rate limits](docs/caching-and-rate-limits.md), and [formations](docs/formations.md). Contributor
+guidelines live in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Contributing + roadmap
 
 Want a legend added to the ranking? Add their username to [`data/legends-list.json`](data/legends-list.json) and open a PR — the daily Action does the rest. Easiest way to get a merged PR here.
