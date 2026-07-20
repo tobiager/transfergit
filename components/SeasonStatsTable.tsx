@@ -11,7 +11,8 @@ function Th({ term, source }: { term: string; source: string }) {
   );
 }
 
-function Cell({ value, hasData }: { value: number; hasData: boolean }) {
+function Cell({ value, hasData, pending }: { value: number; hasData: boolean; pending?: boolean }) {
+  if (pending) return <span className="text-muted animate-pulse">syncing…</span>;
   if (!hasData) return <span className="text-muted">—</span>;
   return <>{formatNumber(value)}</>;
 }
@@ -52,26 +53,38 @@ export function SeasonStatsTable({ seasons }: { seasons: Player["seasons"] }) {
                 data-reveal-row
                 className={`h-11 transition-colors hover:bg-surface-elevated/60 ${
                   i % 2 === 0 ? "bg-surface" : "bg-surface-elevated/40"
-                } ${s.hasData ? "" : "opacity-60"}`}
+                } ${s.hasData || s.pending ? "" : "opacity-60"}`}
               >
                 <td className="px-4 py-2 font-medium">
                   {s.year}
-                  {!s.hasData && <span className="ml-2 text-[10px] uppercase text-muted">on loan</span>}
+                  {s.pending && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] uppercase text-value-green">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-value-green" />
+                      syncing
+                    </span>
+                  )}
+                  {!s.hasData && !s.pending && <span className="ml-2 text-[10px] uppercase text-muted">on loan</span>}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  <Cell value={s.activeDays} hasData={s.hasData} />
+                  <Cell value={s.activeDays} hasData={s.hasData} pending={s.pending} />
                 </td>
                 <td className="px-4 py-2 text-right font-semibold tabular-nums text-value-green">
-                  {s.hasData ? formatNumber(s.commits) : <span className="text-muted">—</span>}
+                  {s.pending ? (
+                    <span className="font-normal text-muted animate-pulse">syncing…</span>
+                  ) : s.hasData ? (
+                    formatNumber(s.commits)
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  <Cell value={s.pullRequests} hasData={s.hasData} />
+                  <Cell value={s.pullRequests} hasData={s.hasData} pending={s.pending} />
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  <Cell value={s.issues} hasData={s.hasData} />
+                  <Cell value={s.issues} hasData={s.hasData} pending={s.pending} />
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  <Cell value={s.totalContributions} hasData={s.hasData} />
+                  <Cell value={s.totalContributions} hasData={s.hasData} pending={s.pending} />
                 </td>
               </tr>
             ))}

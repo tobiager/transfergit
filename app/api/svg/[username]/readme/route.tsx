@@ -12,19 +12,30 @@ import { renderErrorCardSvg, renderReadmeCardSvg } from "@/lib/svg-card/render";
 // serving instantly while a fresh render happens in the background.
 const CACHE_CONTROL = "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400";
 const NOT_FOUND_CACHE_CONTROL = "public, max-age=0, s-maxage=60";
+// Never let a "busy" render stick around as long as a genuine card cache —
+// short s-maxage means the next camo refresh (README embeds) tries again soon.
+const RATE_LIMITED_CACHE_CONTROL = "public, max-age=0, s-maxage=30";
 
 export async function GET(request: Request, { params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
   const animate = new URL(request.url).searchParams.get("animate") !== "false";
-  const player = await loadOgPlayer(username);
+  const result = await loadOgPlayer(username);
 
-  if (!player) {
+  if (result.status === "rate_limited") {
+    // Status 200 (not 5xx): a README <img> shows a broken-image icon on a
+    // non-200 response — this is a real, branded SVG, just a "busy" one.
+    return new Response(renderErrorCardSvg("Transfer market busy — try again shortly"), {
+      headers: { "Content-Type": "image/svg+xml", "Cache-Control": RATE_LIMITED_CACHE_CONTROL },
+    });
+  }
+  if (result.status === "not_found") {
     // Status 200 (not 404): a README <img> shows a broken-image icon on a
     // non-200 response, so the "not found" card renders as a real image.
     return new Response(renderErrorCardSvg("Player not found"), {
       headers: { "Content-Type": "image/svg+xml", "Cache-Control": NOT_FOUND_CACHE_CONTROL },
     });
   }
+  const player = result.player;
 
   const [avatarDataUri, flagDataUri] = await Promise.all([
     fetchAvatarDataUri(player.avatarUrl),

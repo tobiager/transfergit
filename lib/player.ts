@@ -16,7 +16,7 @@ function daysInYear(year: number): number {
 function buildSeasons(profile: GithubProfile): SeasonStat[] {
   const currentYear = new Date().getFullYear();
 
-  const seasons = profile.contributionsByYear.map((c) => {
+  const seasons: SeasonStat[] = profile.contributionsByYear.map((c) => {
     // We only have an exact daily calendar for the rolling last year; for
     // past seasons we approximate "active days" with a reasonable upper
     // bound (can't have more active days than total contributions).
@@ -36,6 +36,23 @@ function buildSeasons(profile: GithubProfile): SeasonStat[] {
       hasData: c.totalContributions > 0,
     };
   });
+
+  // A missing year is real (GitHub's contributionYears says it has data),
+  // it just didn't resolve yet — a real placeholder row ("syncing…" in the
+  // UI), never a silently skipped year. See GithubProfile.missingYears.
+  for (const year of profile.missingYears) {
+    seasons.push({
+      year,
+      activeDays: 0,
+      commits: 0,
+      pullRequests: 0,
+      reviews: 0,
+      issues: 0,
+      totalContributions: 0,
+      hasData: false,
+      pending: true,
+    });
+  }
 
   return seasons.sort((a, b) => b.year - a.year);
 }
@@ -274,5 +291,10 @@ export function buildPlayer(profile: GithubProfile): Player {
     transfers: buildTransfers(profile, marketValueByYear),
     injuries,
     worldCupRepos: profile.worldCupRepos,
+    dataCompleteness: {
+      complete: profile.complete,
+      missingYears: profile.missingYears,
+      degraded: profile.degraded,
+    },
   };
 }

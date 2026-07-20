@@ -1,5 +1,6 @@
 import "server-only";
 import { GithubRateLimitError } from "../github.ts";
+import { withGithubGate } from "../githubGate.ts";
 import type { Contributor } from "./types";
 
 export class RepoNotFoundError extends Error {}
@@ -28,15 +29,14 @@ function isBot(c: RestContributor): boolean {
 export async function fetchTopContributors(owner: string, repo: string): Promise<Contributor[]> {
   const start = Date.now();
   const token = process.env.GITHUB_TOKEN;
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${MAX_ROSTER_SIZE}&anon=false`,
-    {
+  const res = await withGithubGate(() =>
+    fetch(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${MAX_ROSTER_SIZE}&anon=false`, {
       headers: {
         Accept: "application/vnd.github+json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       next: { revalidate: 86400 },
-    }
+    })
   );
 
   if (res.status === 404) {

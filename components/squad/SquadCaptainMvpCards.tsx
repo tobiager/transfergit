@@ -64,7 +64,12 @@ function HighlightCard({
         </span>
         <CardUsername login={player.login} />
       </span>
-      <span className="shrink-0 font-display text-sm text-value-green">{player.marketValueFormatted}</span>
+      <span
+        className={`shrink-0 font-display text-sm ${player.valuationPending ? "animate-pulse text-muted" : "text-value-green"}`}
+        title={player.valuationPending ? "GitHub API is busy — this valuation will fill in automatically" : undefined}
+      >
+        {player.valuationPending ? "syncing…" : player.marketValueFormatted}
+      </span>
     </Link>
   );
 }

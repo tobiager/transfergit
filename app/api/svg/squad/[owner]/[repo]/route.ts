@@ -1,4 +1,5 @@
 import { getSquadFromParams, RepoNotFoundError, NotEnoughPlayersError } from "@/lib/squad";
+import { GithubRateLimitError } from "@/lib/github";
 import { fetchAvatarsBatch } from "@/app/api/og/_shared/avatarBatch";
 import { loadOgLogoDataUri } from "@/app/api/og/_shared/logo";
 import { renderSquadCardSvg, renderSquadErrorCardSvg } from "@/lib/svg-squad/render";
@@ -15,6 +16,7 @@ const AVATAR_SIZE = 64;
 // serving instantly while a fresh render happens in the background.
 const CACHE_CONTROL = "public, max-age=0, s-maxage=43200, stale-while-revalidate=86400";
 const NOT_FOUND_CACHE_CONTROL = "public, max-age=0, s-maxage=60";
+const RATE_LIMITED_CACHE_CONTROL = "public, max-age=0, s-maxage=30";
 
 export async function GET(request: Request, { params }: { params: Promise<{ owner: string; repo: string }> }) {
   const { owner, repo } = await params;
@@ -45,16 +47,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ owne
     });
   } catch (err) {
     // Status 200 (not 404/500): a README <img> shows a broken-image icon on
-    // a non-200 response, so the "not found" card renders as a real image.
+    // a non-200 response, so every error state renders as a real, branded
+    // image instead.
     const message =
       err instanceof RepoNotFoundError
         ? "Repository not found"
         : err instanceof NotEnoughPlayersError
           ? "Not enough contributors to field a squad"
-          : "Couldn't build this squad right now";
+          : err instanceof GithubRateLimitError
+            ? "Transfer market busy — try again shortly"
+            : "Couldn't build this squad right now";
+    const cacheControl = err instanceof GithubRateLimitError ? RATE_LIMITED_CACHE_CONTROL : NOT_FOUND_CACHE_CONTROL;
 
     return new Response(renderSquadErrorCardSvg(message), {
-      headers: { "Content-Type": "image/svg+xml", "Cache-Control": NOT_FOUND_CACHE_CONTROL },
+      headers: { "Content-Type": "image/svg+xml", "Cache-Control": cacheControl },
     });
   }
 }

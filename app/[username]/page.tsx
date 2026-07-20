@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchGithubProfile, fetchOrgJoinYears } from "@/lib/github";
+import { getGithubProfile, fetchOrgJoinYears } from "@/lib/github";
 import { buildPlayer, buildOrgTransfers } from "@/lib/player";
 import { percentileOf, percentileTier } from "@/lib/ranking";
 import { PlayerHeader } from "@/components/PlayerHeader";
@@ -17,6 +17,7 @@ import { ScoutCta } from "@/components/ScoutCta";
 import { ProfileReveal } from "@/components/ProfileReveal";
 import { ProfileTabs } from "@/components/ProfileTabs";
 import { StatCards, type StatCardData } from "@/components/StatCards";
+import { PartialDataBanner } from "@/components/PartialDataBanner";
 import { Footer } from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -63,7 +64,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
 export default async function PlayerPage({ params }: PageProps) {
   const { username } = await params;
-  const profile = await fetchGithubProfile(username);
+  const profile = await getGithubProfile(username);
 
   if (!profile) notFound();
 
@@ -109,7 +110,9 @@ export default async function PlayerPage({ params }: PageProps) {
     },
     {
       label: "Commits this season",
-      sublabel: `${currentSeason?.year ?? new Date().getFullYear()} season`,
+      sublabel: currentSeason?.pending
+        ? "syncing…"
+        : `${currentSeason?.year ?? new Date().getFullYear()} season`,
       value: currentSeason?.commits ?? 0,
       compact: true,
       ringPercent: commitsPercentile,
@@ -130,6 +133,12 @@ export default async function PlayerPage({ params }: PageProps) {
     <ProfileReveal>
       <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pt-8 md:px-6">
         <div id="overview" className="scroll-mt-28 space-y-6">
+          {!player.dataCompleteness.complete && (
+            <PartialDataBanner
+              missingYears={player.dataCompleteness.missingYears}
+              degraded={player.dataCompleteness.degraded}
+            />
+          )}
           <PlayerHeader player={player} tier={tier} />
           <StatCards items={statCards} />
         </div>

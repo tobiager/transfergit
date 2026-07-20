@@ -16,7 +16,24 @@ interface Fixture {
   profileCommits: number; // cross-repo commits used by the profile valuation
 }
 
-function fullProfileGraphQL(f: Fixture) {
+function isBaseQuery(query: string) {
+  return query.includes("repositories(first: 100");
+}
+function isLastYearChunk(query: string) {
+  return query.includes("contributionsCollection") && query.includes("weeks");
+}
+function isYearChunk(query: string) {
+  return query.includes("contributionsCollection") && !query.includes("weeks");
+}
+function isCreatedAtProbe(query: string) {
+  return !isBaseQuery(query) && !isYearChunk(query) && !isLastYearChunk(query);
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return { ok: status < 400, status, headers: new Headers(), json: async () => body, text: async () => "" } as unknown as Response;
+}
+
+function baseProfileBody(f: Fixture) {
   return {
     data: {
       externalMergedPRs: { issueCount: 0, nodes: [] },
@@ -35,28 +52,36 @@ function fullProfileGraphQL(f: Fixture) {
         following: { totalCount: 0 },
         repositories: {
           totalCount: 1,
+          pageInfo: { hasNextPage: false, endCursor: null },
           nodes: [
-            {
-              name: "repo",
-              stargazerCount: f.stars,
-              forkCount: 0,
-              primaryLanguage: { name: "TypeScript" },
-              createdAt: CREATED_AT,
-              pushedAt: CREATED_AT,
-            },
+            { name: "repo", stargazerCount: f.stars, forkCount: 0, primaryLanguage: { name: "TypeScript" }, createdAt: CREATED_AT, pushedAt: CREATED_AT },
           ],
         },
         organizations: { nodes: [] },
-        lastYear: { totalCommitContributions: f.profileCommits, contributionCalendar: { weeks: [] } },
-        [`y${CURRENT_YEAR}`]: {
-          totalCommitContributions: f.profileCommits,
+      },
+    },
+  };
+}
+
+function yearChunkBody(commits: number) {
+  return {
+    data: {
+      user: {
+        contributionsCollection: {
+          totalCommitContributions: commits,
           totalPullRequestContributions: 0,
           totalIssueContributions: 0,
           totalPullRequestReviewContributions: 0,
-          contributionCalendar: { totalContributions: f.profileCommits },
+          contributionCalendar: { totalContributions: commits },
         },
       },
     },
+  };
+}
+
+function lastYearChunkBody(commits: number) {
+  return {
+    data: { user: { contributionsCollection: { totalCommitContributions: commits, contributionCalendar: { weeks: [] } } } },
   };
 }
 
@@ -71,28 +96,17 @@ function mockGithub(fixtures: Fixture[]) {
         contributions: f.repoCommits,
         type: "User",
       }));
-      return { ok: true, status: 200, json: async () => body, text: async () => "" } as Response;
+      return jsonResponse(body);
     }
 
     if (typeof url === "string" && url.includes("/graphql")) {
-      const { query, variables } = JSON.parse(init!.body as string) as {
-        query: string;
-        variables: { login: string };
-      };
+      const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
       const fixture = byLogin.get(variables.login)!;
 
-      // fetchGithubProfile makes two round trips per user: a small
-      // createdAt-only query, then the big profile query (identifiable by
-      // its lastYearFrom variable / contributionsCollection fields).
-      if (query.includes("lastYear")) {
-        return { ok: true, status: 200, json: async () => fullProfileGraphQL(fixture), text: async () => "" } as Response;
-      }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ data: { user: { createdAt: CREATED_AT } } }),
-        text: async () => "",
-      } as Response;
+      if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+      if (isBaseQuery(query)) return jsonResponse(baseProfileBody(fixture));
+      if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(fixture.profileCommits));
+      return jsonResponse(yearChunkBody(fixture.profileCommits));
     }
 
     throw new Error(`unexpected fetch: ${url}`);
@@ -145,10 +159,11 @@ test("the squad total is identical across formations and equals the cached full 
   process.env.GITHUB_TOKEN = "test-token";
 
   // 11 contributors; 5 of them fail their profile query entirely (500, never
-  // recovers) → pending "—", excluded from the total. This is the Problem A
-  // scenario: the live page requests no formation, the exports request
-  // "433"/"442"/… — all must read the same total, computed once, not each
-  // re-summing whatever survived its own cold render.
+  // recovers, and the REST fallback also has nothing to say for them) →
+  // pending "—", excluded from the total. This is the Problem A scenario:
+  // the live page requests no formation, the exports request "433"/"442"/…
+  // — all must read the same total, computed once, not each re-summing
+  // whatever survived its own cold render.
   const failing = new Set(["u2", "u4", "u6", "u8", "u10"]);
   const fixtures: Fixture[] = Array.from({ length: 11 }, (_, i) => ({
     login: `u${i}`,
@@ -162,16 +177,18 @@ test("the squad total is identical across formations and equals the cached full 
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
     if (typeof url === "string" && url.includes("/contributors")) {
       const body = fixtures.map((f) => ({ login: f.login, avatar_url: `https://avatars/${f.login}`, contributions: f.repoCommits, type: "User" }));
-      return { ok: true, status: 200, json: async () => body, text: async () => "" } as Response;
+      return jsonResponse(body);
+    }
+    if (typeof url === "string" && !url.includes("/graphql")) {
+      // REST fallback also fails for failing users — no recovery path.
+      throw new Error(`unexpected fetch: ${url}`);
     }
     const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
-    if (failing.has(variables.login)) {
-      return { ok: false, status: 500, json: async () => ({}), text: async () => "boom" } as Response;
-    }
-    if (query.includes("lastYear")) {
-      return { ok: true, status: 200, json: async () => fullProfileGraphQL(byLogin.get(variables.login)!), text: async () => "" } as Response;
-    }
-    return { ok: true, status: 200, json: async () => ({ data: { user: { createdAt: CREATED_AT } } }), text: async () => "" } as Response;
+    if (failing.has(variables.login)) return jsonResponse({}, 500);
+    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+    if (isBaseQuery(query)) return jsonResponse(baseProfileBody(byLogin.get(variables.login)!));
+    if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(byLogin.get(variables.login)!.profileCommits));
+    return jsonResponse(yearChunkBody(byLogin.get(variables.login)!.profileCommits));
   }) as typeof fetch;
 
   const asPage = await getRepoSquad("acme", "widgets"); // no formation (live page)

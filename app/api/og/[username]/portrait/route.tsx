@@ -17,7 +17,7 @@ const WIDTH = 900;
 const HEIGHT = 1200;
 const CACHE_CONTROL = "public, max-age=0, s-maxage=86400, stale-while-revalidate";
 
-function NotFoundImage() {
+function StatusImage({ message }: { message: string }) {
   return (
     <div
       style={{
@@ -31,9 +31,10 @@ function NotFoundImage() {
         fontFamily: "Archivo Black",
         fontSize: 32,
         textAlign: "center",
+        padding: 80,
       }}
     >
-      Player not found
+      {message}
     </div>
   );
 }
@@ -45,17 +46,22 @@ function Divider() {
 export async function GET(_request: Request, { params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
   const fonts = await loadOgFonts();
-  const player = await loadOgPlayer(username);
+  const result = await loadOgPlayer(username);
 
-  if (!player) {
-    return new ImageResponse(<NotFoundImage />, {
-      width: WIDTH,
-      height: HEIGHT,
-      fonts,
-      status: 404,
-      headers: { "Cache-Control": "public, max-age=0, s-maxage=60" },
-    });
+  if (result.status !== "ok") {
+    const isRateLimited = result.status === "rate_limited";
+    return new ImageResponse(
+      <StatusImage message={isRateLimited ? "Transfer market busy — try again shortly" : "Player not found"} />,
+      {
+        width: WIDTH,
+        height: HEIGHT,
+        fonts,
+        status: isRateLimited ? 200 : 404,
+        headers: { "Cache-Control": isRateLimited ? "public, max-age=0, s-maxage=30" : "public, max-age=0, s-maxage=60" },
+      }
+    );
   }
+  const player = result.player;
 
   const currentSeason = player.seasons[0];
   const tier = percentileTier({

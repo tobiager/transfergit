@@ -38,20 +38,40 @@ their *current* star count, and every year uses *current* followers. This is a d
 simplification (see the comment above `computeValuationTimeline`), not a bug — it's what makes a "market value
 evolution" chart possible without a time-series data source.
 
-## Squad valuation fallbacks (tier 1 only)
+### Repo count: why the card can show fewer repos than github.com's profile tab
 
-`lib/squad/valuation.ts` has three quality levels, in order of preference — see that file for the full comment
-with real cost numbers:
+`GithubProfile.repositories` (and therefore `starsTotal`/`reposOver10Stars` above) comes from a GraphQL query with
+`ownerAffiliations: OWNER, isFork: false` (see `BASE_PROFILE_QUERY` / `REPO_PAGE_QUERY` in
+[`lib/github.ts`](../lib/github.ts)) — **owned, non-fork repos only**. GitHub's own profile "Repositories" tab
+counts forks too by default, so a prolific forker's public repo count there is routinely higher than what shows
+here. This is a deliberate filter (forked repos add no real stars/authored-code signal to the formula), not a
+pagination bug — pagination itself is cursor-based and capped at `MAX_REPO_PAGES` (12 pages / 1,200 repos,
+ordered by stars DESC so the capped tail never moves the valuation). Archived repos are **not** filtered out and
+still count.
 
-1. **Full GraphQL profile** (`fetchGraphqlValuation`) — same formula, same quality as the player card.
-2. **REST fallback** (`fetchRestValuation`) — used when the GraphQL profile query is deterministically too
-   expensive for GitHub's per-request resource limit (`GithubQueryTooExpensiveError`) or the GraphQL budget is
-   low. One cheap `GET /users/{login}` call recovers `followers` + account age; `commitsTotal`, `starsTotal`,
-   `prsTotal`, `commitsLast12Months` are all `0` in this path, so it's a **floor value, not the real one** — a
-   later successful full fetch overwrites it.
-3. **Pending** (`—`, `marketValue: null`) — both failed and no cached value exists for this login. Excluded from
-   `Squad.totalValue`, never counted as €0. A genuinely-nonexistent/org account (GraphQL resolves but has no
-   usable profile) *is* a real `€0` (`zeroValuation`), which is different from pending.
+## Fetching, chunking, and completeness
+
+`lib/github.ts`'s `getGithubProfile` is the one fetch/cache entrypoint every route (`/[username]`, the OG/SVG
+export routes, and squad valuation via `lib/squad/valuation.ts`'s `fetchValuation`) goes through. A profile is
+assembled from several small GraphQL requests rather than one monolithic query — see
+[`docs/architecture.md`](architecture.md) for the full chunking/bisection/caching design. Two outcomes matter for
+valuation quality:
+
+1. **Complete** (`GithubProfile.complete === true`) — every year in GitHub's own `contributionYears` list resolved,
+   plus the rolling lastYear window. Same formula, same quality as before chunking existed. Durably cached 24h.
+2. **Partial** (`complete: false`, `missingYears: number[]`) — one or more chunks never resolved even after
+   rate-limit retry and cost-bisection (year → semester → quarter). Real GraphQL data for the years that DID
+   resolve, `commitsTotal`/history simply reflect a smaller `contributionsByYear` — never a fabricated `0` for a
+   missing year. Only cached ~10 minutes so the next visit retries just the missing years. The player card and
+   squad valuations surface this via `Player.dataCompleteness` — see `app/[username]/page.tsx`'s partial banner.
+3. **Degraded** (`degraded: true`) — GraphQL was entirely unavailable (down, or hourly points budget low); a REST
+   `GET /users/{login}` (+ best-effort repos) last resort. `commitsTotal`, `prsTotal`, `commitsLast12Months` are
+   all `0` in this path, so it's a **floor value, not the real one** — cached only ~10 minutes, replaced by a full
+   fetch as soon as GraphQL recovers.
+4. **Pending** (squad only, `—`, `marketValue: null`) — a contributor whose valuation has never once succeeded and
+   has no stale cached value to fall back to. Excluded from `Squad.totalValue`, never counted as €0. A
+   genuinely-nonexistent/org account (GraphQL resolves but has no usable profile) *is* a real `€0`
+   (`zeroValuation`), which is different from pending.
 
 ## Reserves (tier 2, roster positions 31–100)
 

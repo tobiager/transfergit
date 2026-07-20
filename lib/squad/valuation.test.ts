@@ -7,7 +7,24 @@ const ORIGINAL_TOKEN = process.env.GITHUB_TOKEN;
 const CURRENT_YEAR = new Date().getFullYear();
 const CREATED_AT = `${CURRENT_YEAR}-01-01T00:00:00Z`;
 
-function fullProfileGraphQL(login: string) {
+function isBaseQuery(query: string) {
+  return query.includes("repositories(first: 100");
+}
+function isLastYearChunk(query: string) {
+  return query.includes("contributionsCollection") && query.includes("weeks");
+}
+function isYearChunk(query: string) {
+  return query.includes("contributionsCollection") && !query.includes("weeks");
+}
+function isCreatedAtProbe(query: string) {
+  return !isBaseQuery(query) && !isYearChunk(query) && !isLastYearChunk(query);
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return { ok: status < 400, status, headers: new Headers(), json: async () => body, text: async () => "" } as unknown as Response;
+}
+
+function baseProfileBody(login: string, followers: number) {
   return {
     data: {
       externalMergedPRs: { issueCount: 0, nodes: [] },
@@ -22,17 +39,42 @@ function fullProfileGraphQL(login: string) {
         createdAt: CREATED_AT,
         websiteUrl: null,
         twitterUsername: null,
-        followers: { totalCount: 10 },
+        followers: { totalCount: followers },
         following: { totalCount: 0 },
-        repositories: { totalCount: 0, nodes: [] },
+        repositories: { totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] },
         organizations: { nodes: [] },
-        lastYear: { totalCommitContributions: 5, contributionCalendar: { weeks: [] } },
-        [`y${CURRENT_YEAR}`]: {
-          totalCommitContributions: 5,
+      },
+    },
+  };
+}
+
+function yearChunkBody(commits: number) {
+  return {
+    data: {
+      user: {
+        contributionsCollection: {
+          totalCommitContributions: commits,
           totalPullRequestContributions: 0,
           totalIssueContributions: 0,
           totalPullRequestReviewContributions: 0,
-          contributionCalendar: { totalContributions: 5 },
+          restrictedContributionsCount: 0,
+        },
+      },
+    },
+  };
+}
+
+function lastYearChunkBody(commits: number) {
+  return {
+    data: {
+      user: {
+        contributionsCollection: {
+          totalCommitContributions: commits,
+          totalPullRequestContributions: 0,
+          totalIssueContributions: 0,
+          totalPullRequestReviewContributions: 0,
+          restrictedContributionsCount: 0,
+          contributionCalendar: { weeks: [] },
         },
       },
     },
@@ -43,32 +85,13 @@ function fullProfileGraphQL(login: string) {
 // request that never recovers; "alice" always succeeds.
 function mockGithubWithFailingUser(failingLogin: string) {
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
-    if (typeof url !== "string" || !url.includes("/graphql")) {
-      throw new Error(`unexpected fetch: ${url}`);
-    }
-    const { query, variables } = JSON.parse(init!.body as string) as {
-      query: string;
-      variables: { login: string };
-    };
-
-    if (variables.login === failingLogin) {
-      return { ok: false, status: 500, json: async () => ({}), text: async () => "boom" } as Response;
-    }
-
-    if (query.includes("lastYear")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => fullProfileGraphQL(variables.login),
-        text: async () => "",
-      } as Response;
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ data: { user: { createdAt: CREATED_AT } } }),
-      text: async () => "",
-    } as Response;
+    if (typeof url !== "string" || !url.includes("/graphql")) throw new Error(`unexpected fetch: ${url}`);
+    const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
+    if (variables.login === failingLogin) return jsonResponse({}, 500);
+    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+    if (isBaseQuery(query)) return jsonResponse(baseProfileBody(variables.login, 10));
+    if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(5));
+    return jsonResponse(yearChunkBody(5));
   }) as typeof fetch;
 }
 
@@ -102,7 +125,7 @@ test("a persistently failing valuation batch never fabricates a €0, and the to
   assert.equal(totalOf(first), totalOf(second), "total must be stable between consecutive calls");
 });
 
-test("a resource-limit-exceeded profile query falls back to REST /users, not a pending —", async (t) => {
+test("GraphQL entirely unavailable falls back to a real REST-degraded valuation, not a pending —", async (t) => {
   t.after(() => {
     process.env.GITHUB_TOKEN = ORIGINAL_TOKEN;
   });
@@ -111,45 +134,27 @@ test("a resource-limit-exceeded profile query falls back to REST /users, not a p
   const login = "too-expensive-user";
   let restCalled = false;
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
-    // REST /users/{login} secondary fallback — followers + created_at.
-    if (typeof url === "string" && url.includes("/users/")) {
+    if (typeof url === "string" && url.includes(`/users/${login}/repos`)) {
+      return jsonResponse([]);
+    }
+    if (typeof url === "string" && url.includes(`/users/${login}`)) {
       restCalled = true;
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ login, followers: 100, created_at: `${CURRENT_YEAR - 8}-01-01T00:00:00Z`, location: null }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse({ login, followers: 100, public_repos: 0, created_at: `${CURRENT_YEAR - 8}-01-01T00:00:00Z` });
     }
-    if (typeof url !== "string" || !url.includes("/graphql")) {
-      throw new Error(`unexpected fetch: ${url}`);
-    }
+    if (typeof url !== "string" || !url.includes("/graphql")) throw new Error(`unexpected fetch: ${url}`);
     const { query } = JSON.parse(init!.body as string) as { query: string };
-    // The big profile query returns GitHub's real "200 + all
-    // RESOURCE_LIMITS_EXCEEDED + data.user null" shape → too-expensive.
-    if (query.includes("lastYear")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          data: { externalMergedPRs: null, closedIssues: null, user: null },
-          errors: [{ type: "RESOURCE_LIMITS_EXCEEDED", path: ["user"], message: "Resource limits for this query exceeded." }],
-        }),
-        text: async () => "",
-      } as Response;
-    }
-    // createdAt probe still succeeds.
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ data: { user: { createdAt: CREATED_AT } } }),
-      text: async () => "",
-    } as Response;
+    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+    // The base query deterministically trips GitHub's per-request resource
+    // limit — GraphQL is unusable for this login, not just this one query.
+    return jsonResponse({
+      data: { externalMergedPRs: null, closedIssues: null, user: null },
+      errors: [{ type: "RESOURCE_LIMITS_EXCEEDED", path: ["user"], message: "Resource limits for this query exceeded." }],
+    });
   }) as typeof fetch;
 
   const [result] = await valuateContributors([{ login, avatarUrl: "a", commits: 1 }]);
 
-  assert.ok(restCalled, "the REST /users fallback must run when the GraphQL query is too expensive");
+  assert.ok(restCalled, "the REST fallback must run when GraphQL can't produce a usable profile");
   assert.notEqual(result.marketValue, null, "REST fallback yields a real value, not a pending —");
   assert.equal(result.valuationPending, undefined);
   assert.notEqual(result.marketValueFormatted, "—");
@@ -166,20 +171,13 @@ test("concurrent renders requesting the same login coalesce into one in-flight f
   const login = "coalesce-user";
   let graphqlCalls = 0;
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
-    if (typeof url !== "string" || !url.includes("/graphql")) {
-      throw new Error(`unexpected fetch: ${url}`);
-    }
+    if (typeof url !== "string" || !url.includes("/graphql")) throw new Error(`unexpected fetch: ${url}`);
     graphqlCalls++;
     const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
-    if (query.includes("lastYear")) {
-      return { ok: true, status: 200, json: async () => fullProfileGraphQL(variables.login), text: async () => "" } as Response;
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ data: { user: { createdAt: CREATED_AT } } }),
-      text: async () => "",
-    } as Response;
+    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+    if (isBaseQuery(query)) return jsonResponse(baseProfileBody(variables.login, 10));
+    if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(5));
+    return jsonResponse(yearChunkBody(5));
   }) as typeof fetch;
 
   const contributors: Contributor[] = [{ login, avatarUrl: "a", commits: 1 }];
@@ -188,10 +186,10 @@ test("concurrent renders requesting the same login coalesce into one in-flight f
   // fired concurrently, not sequentially.
   const [first, second] = await Promise.all([valuateContributors(contributors), valuateContributors(contributors)]);
 
-  // fetchGithubProfile makes 2 round trips per user (a createdAt probe,
-  // then the full profile query) — coalescing means that pair happens
+  // getGithubProfile makes 4 round trips per user (createdAt probe, base,
+  // one year chunk, the lastYear chunk) — coalescing means that set happens
   // once total across both concurrent callers, not once each.
-  assert.equal(graphqlCalls, 2, "two concurrent requests for the same login must share one in-flight fetch");
+  assert.equal(graphqlCalls, 4, "two concurrent requests for the same login must share one in-flight fetch");
   assert.equal(first[0].marketValue, second[0].marketValue);
 });
 
@@ -205,21 +203,16 @@ test("stale-on-error: a login that succeeded once keeps serving that valuation o
   let shouldFail = false;
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
     if (typeof url !== "string" || !url.includes("/graphql")) {
+      // REST fallback also fails while shouldFail is true, so the only
+      // recovery path left is the process-local stale-known-good value.
       throw new Error(`unexpected fetch: ${url}`);
     }
-    if (shouldFail) {
-      return { ok: false, status: 500, json: async () => ({}), text: async () => "boom" } as Response;
-    }
+    if (shouldFail) return jsonResponse({}, 500);
     const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
-    if (query.includes("lastYear")) {
-      return { ok: true, status: 200, json: async () => fullProfileGraphQL(variables.login), text: async () => "" } as Response;
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ data: { user: { createdAt: CREATED_AT } } }),
-      text: async () => "",
-    } as Response;
+    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+    if (isBaseQuery(query)) return jsonResponse(baseProfileBody(variables.login, 10));
+    if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(5));
+    return jsonResponse(yearChunkBody(5));
   }) as typeof fetch;
 
   const contributors: Contributor[] = [{ login, avatarUrl: "a", commits: 1 }];
@@ -246,22 +239,13 @@ test("a login that fails on one render and succeeds on the next has its fallback
   const login = "recovers-user";
   let shouldFail = true;
   (globalThis as { fetch: typeof fetch }).fetch = (async (url: string, init?: RequestInit) => {
-    if (typeof url !== "string" || !url.includes("/graphql")) {
-      throw new Error(`unexpected fetch: ${url}`);
-    }
-    if (shouldFail) {
-      return { ok: false, status: 500, json: async () => ({}), text: async () => "boom" } as Response;
-    }
+    if (typeof url !== "string" || !url.includes("/graphql")) throw new Error(`unexpected fetch: ${url}`);
+    if (shouldFail) return jsonResponse({}, 500);
     const { query, variables } = JSON.parse(init!.body as string) as { query: string; variables: { login: string } };
-    if (query.includes("lastYear")) {
-      return { ok: true, status: 200, json: async () => fullProfileGraphQL(variables.login), text: async () => "" } as Response;
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ data: { user: { createdAt: CREATED_AT } } }),
-      text: async () => "",
-    } as Response;
+    if (isCreatedAtProbe(query)) return jsonResponse({ data: { user: { createdAt: CREATED_AT } } });
+    if (isBaseQuery(query)) return jsonResponse(baseProfileBody(variables.login, 10));
+    if (isLastYearChunk(query)) return jsonResponse(lastYearChunkBody(5));
+    return jsonResponse(yearChunkBody(5));
   }) as typeof fetch;
 
   const contributors: Contributor[] = [{ login, avatarUrl: "a", commits: 1 }];

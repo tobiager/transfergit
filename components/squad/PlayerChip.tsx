@@ -107,9 +107,11 @@ export function PlayerChip({
             <UsernameText login={player.login} variant="row" className="truncate font-mono leading-tight text-foreground" />
             <span
               className="shrink-0 whitespace-nowrap text-right"
-              title={player.valuationPending ? "valuation pending" : undefined}
+              title={player.valuationPending ? "GitHub API is busy — this valuation will fill in automatically" : undefined}
             >
-              <span className="font-display text-[11px] text-value-green">{player.marketValueFormatted}</span>
+              <span className={`font-display text-[11px] ${player.valuationPending ? "animate-pulse text-muted" : "text-value-green"}`}>
+                {player.valuationPending ? "syncing…" : player.marketValueFormatted}
+              </span>
               <span className="ml-1.5 text-[9px] text-muted">{pluralize(player.commits, "commit")}</span>
             </span>
           </span>

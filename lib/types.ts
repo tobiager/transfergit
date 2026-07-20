@@ -49,6 +49,25 @@ export interface GithubProfile {
   maxExternalPRRepoStars: number;
   closedIssues: number;
   worldCupRepos: WorldCupRepo[];
+  // True when GraphQL was unavailable (rate-limited / budget exhausted) and
+  // this profile came from the cheap REST last-resort fallback instead —
+  // real but reduced (no contribution history, no orgs). Re-attempted via
+  // GraphQL on the next visit rather than cached for a full day; see
+  // getGithubProfile in lib/github.ts.
+  degraded: boolean;
+  // False when one or more contribution-year chunks (or the rolling
+  // lastYear window) never resolved, even after retry and bisection — see
+  // missingYears. An incomplete profile is never durably (24h) cached; see
+  // getGithubProfile/PartialProfileError in lib/github.ts.
+  complete: boolean;
+  // Calendar years whose contributionsCollection chunk never resolved.
+  // Excluded from contributionsByYear (never fabricated as zero).
+  missingYears: number[];
+  // Debugging aid for the chunked-fetch pipeline: when this profile was
+  // assembled and how many GraphQL requests it took (base + repo pages +
+  // one per contribution year + the rolling-365-day window).
+  computedAt: string;
+  chunksUsed: number;
 }
 
 // Distinct 10k+ star repos the user landed a merged external PR in — each is
@@ -73,6 +92,12 @@ export interface SeasonStat {
   issues: number;
   totalContributions: number;
   hasData: boolean;
+  // True for a year GitHub reports the user has contributions in
+  // (contributionYears) but whose chunk hasn't resolved yet — distinct from
+  // hasData: false, which means "resolved, genuinely zero" (an "on loan"
+  // season). A pending season is rendered as a real row with a "syncing…"
+  // placeholder, never silently dropped from the table.
+  pending?: boolean;
 }
 
 export interface TransferRecord {
@@ -162,4 +187,12 @@ export interface Player {
   transfers: TransferRecord[];
   injuries: Injury[];
   worldCupRepos: WorldCupRepo[];
+  // Surfaces GithubProfile.complete/missingYears/degraded to the UI so a
+  // partial fetch is shown as partial (banner + "syncing…" season rows)
+  // instead of silently rendering as if it were the full picture.
+  dataCompleteness: {
+    complete: boolean;
+    missingYears: number[];
+    degraded: boolean;
+  };
 }

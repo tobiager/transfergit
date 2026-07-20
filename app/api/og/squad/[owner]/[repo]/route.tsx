@@ -11,6 +11,7 @@ import {
   type Starter,
   type SquadPlayer,
 } from "@/lib/squad";
+import { GithubRateLimitError } from "@/lib/github";
 import { pitchPosition, pitchPositionHorizontal } from "@/lib/squad/pitchLayout";
 import { isSmallSided, chipScale, formationLabel } from "@/lib/squad/formations";
 import { fitUsername } from "@/lib/squad/textFit";
@@ -1030,18 +1031,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ owne
 
     return new ImageResponse(image, { ...size, fonts, headers: { "Cache-Control": CACHE_CONTROL } });
   } catch (err) {
+    const isRateLimited = err instanceof GithubRateLimitError;
     const message =
       err instanceof RepoNotFoundError
         ? "Repository not found"
         : err instanceof NotEnoughPlayersError
           ? "Not enough contributors to field a squad"
-          : "Couldn't build this squad right now";
+          : isRateLimited
+            ? "Transfer market busy — try again shortly"
+            : "Couldn't build this squad right now";
 
+    // A rate-limited render is worth a 200 (not 404/500) — an <img> tag
+    // shows a broken-image icon on a non-200 response, and this is real,
+    // branded content, just a "come back shortly" one.
     return new ImageResponse(<ErrorImage {...size} theme={theme} message={message} />, {
       ...size,
       fonts,
-      status: err instanceof RepoNotFoundError || err instanceof NotEnoughPlayersError ? 404 : 500,
-      headers: { "Cache-Control": "public, max-age=0, s-maxage=60" },
+      status: err instanceof RepoNotFoundError || err instanceof NotEnoughPlayersError ? 404 : isRateLimited ? 200 : 500,
+      headers: { "Cache-Control": isRateLimited ? "public, max-age=0, s-maxage=30" : "public, max-age=0, s-maxage=60" },
     });
   }
 }
