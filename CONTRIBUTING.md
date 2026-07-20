@@ -1,3 +1,10 @@
+<!-- Banner -->
+<p align="center">
+  <a href="https://github.com/tobiager/transfergit">
+    <img src="public/transfergit/contribution-banner.png" alt="Contribution Guide" width="1000">
+  </a>
+</p>
+
 <div align="center">
 
 # 🤝 Contributing to Transfergit
