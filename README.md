@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/transfergit/cartel.png" width="500" alt="Transfergit">
+<img src="public/transfergit/signboard.png" width="500" alt="Transfergit">
 
 **Your GitHub, valued like a football player.**
 Market value, transfer history, injuries — the whole file.
