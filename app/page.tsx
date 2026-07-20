@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SearchInput } from "@/components/SearchInput";
+import { SquadSearchInput } from "@/components/SquadSearchInput";
 import { DevFan } from "@/components/DevFan";
 import { LandingReveal } from "@/components/LandingReveal";
 import { Ticker } from "@/components/Ticker";
@@ -64,6 +65,11 @@ export default function LandingPage() {
                   {username}
                 </Link>
               ))}
+            </div>
+
+            <div className="mt-6 flex flex-col items-center gap-2 lg:items-start">
+              <span className="text-xs text-muted">Or scout an entire repo</span>
+              <SquadSearchInput />
             </div>
           </div>
 

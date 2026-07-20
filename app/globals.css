@@ -294,6 +294,70 @@ table {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
+/* ── Squad match center ──────────────────────────────────────────────
+   Desktop with enough vertical room: the /squad page locks to exactly one
+   viewport (navbar + 3-column shell, zero page scroll) — only the side
+   columns scroll, internally. Short desktop windows (<680px tall) skip all
+   of this and fall back to normal page scroll so the pitch never gets
+   compressed into illegibility. Widths (lg 2-col / xl 3-col) are handled
+   by Tailwind classes on the shell markup; only the height-dependent
+   behavior lives here. */
+@media (min-width: 1024px) and (min-height: 680px) {
+  .squad-shell {
+    height: calc(100dvh - 4rem - 1px); /* minus the h-16 navbar + its border-b */
+    overflow: hidden;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .squad-scroll {
+    overflow-y: auto;
+    /* Contain the scroll: no chaining to the body (which would look like the
+       whole page jumps when the list hits its end), and reserve the
+       scrollbar's space up-front so showing/hiding it never shifts layout. */
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 16px,
+      black calc(100% - 16px),
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 16px,
+      black calc(100% - 16px),
+      transparent
+    );
+  }
+
+  .squad-center-lock {
+    min-height: 0;
+  }
+
+  /* Size container so the pitch can size itself off the stage's real
+     height/width via cq units. */
+  .pitch-stage {
+    container-type: size;
+  }
+
+  /* Fit the pitch exactly into the stage's height, keeping its aspect
+     ratio (--pitch-ar = width/height) and never exceeding the stage's
+     width — the goalkeeper can never scroll out of view. */
+  .pitch-fit {
+    height: 100cqh;
+    width: calc(100cqh * var(--pitch-ar, 0.5763));
+    max-width: 100cqw;
+    max-height: calc(100cqw / var(--pitch-ar, 0.5763));
+    /* Chips scale with the pitch (JS-measured --chip-scale) only in
+       match-center mode; everywhere else they keep their designed size. */
+    --chip-fit: var(--chip-scale, 1);
+  }
+}
+
 ::-webkit-scrollbar {
   height: 8px;
   width: 8px;

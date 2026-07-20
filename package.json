@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test lib/**/*.test.ts",
+    "test": "node --conditions=react-server --test lib/**/*.test.ts",
     "build:legends": "node --env-file=.env.local -r ./scripts/stub-server-only.cjs --import tsx scripts/build-legends.ts"
   },
   "dependencies": {

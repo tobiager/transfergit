@@ -10,10 +10,10 @@ const AVATAR_REVALIDATE_SECONDS = 86400;
 // proxy re-serves this SVG raw and won't fetch anything it points to.
 // Returns null on any failure so the caller can fall back to an initials
 // circle instead of a broken image.
-export async function fetchAvatarDataUri(avatarUrl: string): Promise<string | null> {
+export async function fetchAvatarDataUri(avatarUrl: string, size = 128): Promise<string | null> {
   try {
     const url = new URL(avatarUrl);
-    url.searchParams.set("size", "128");
+    url.searchParams.set("size", String(size));
 
     const res = await fetch(url.toString(), {
       signal: AbortSignal.timeout(AVATAR_TIMEOUT_MS),
