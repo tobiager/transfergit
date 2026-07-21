@@ -38,7 +38,12 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-center font-oswald text-[44px] font-bold uppercase leading-[0.96] tracking-wide text-[var(--tg-fg)] sm:text-[64px] lg:text-left lg:text-[56px] xl:text-[72px] 2xl:text-[92px]">
-                <span data-reveal-line className="block overflow-hidden">
+                {/* No overflow-hidden here: the reveal animation clips via
+                    clip-path (HomeReveal.tsx), not overflow, so an
+                    overflow-hidden box was clipping "has a price■" off its
+                    own right edge whenever the nowrap line rendered a hair
+                    wider than the span at certain zoom levels. */}
+                <span data-reveal-line className="block">
                   Every dev
                 </span>
                 {/* whitespace-nowrap keeps "has a price■" a single
@@ -46,7 +51,7 @@ export default function LandingPage() {
                     split across two lines the moment the line is a hair
                     too narrow for both, turning the headline into three
                     lines instead of the intended two. */}
-                <span data-reveal-line className="block overflow-hidden whitespace-nowrap">
+                <span data-reveal-line className="block whitespace-nowrap">
                   has a price
                   <span
                     aria-hidden

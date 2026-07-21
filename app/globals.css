@@ -12,6 +12,10 @@
      block, /squad's match-center shell) — keep both in sync with this if
      the navbar's own padding/height ever changes. */
   --nav-h: 68px;
+  /* ProfileTabs row height (py-3 + text) — used to stack it flush under
+     the sticky navbar and to keep anchor targets (#stats etc.) landing
+     below both bars instead of under them. */
+  --tabs-h: 45px;
   /* Scrolled-state glass — home overrides both to near-black/green tones
      below (body:has(.tg-home)) so the navbar doesn't show the navy
      floodlight theme over its own near-black background; every other
