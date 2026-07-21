@@ -1,0 +1,21 @@
+name: Warm tomorrow's Squad of the Day
+
+on:
+  schedule:
+    # 23:50 UTC, ~10 minutes before the daily repo pick rotates at UTC
+    # midnight — see lib/squad/featuredRepos.ts.
+    - cron: "50 23 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run warm:squad-of-the-day
+        env:
+          NODE_ENV: production

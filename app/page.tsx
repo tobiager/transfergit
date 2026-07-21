@@ -1,105 +1,92 @@
-import Link from "next/link";
-import { SearchInput } from "@/components/SearchInput";
-import { SquadSearchInput } from "@/components/SquadSearchInput";
-import { DevFan } from "@/components/DevFan";
-import { LandingReveal } from "@/components/LandingReveal";
-import { Ticker } from "@/components/Ticker";
-
-const TRY_USERNAMES = ["torvalds", "yyx990803", "addyosmani"];
-
-const HOW_IT_WORKS = [
-  {
-    title: "Signal Reading",
-    body: "We analyze commits, PRs, stars, and streaks across public repos without touching your private code.",
-  },
-  {
-    title: "Algorithmic Appraisal",
-    body: "Our financial model values your effort and assigns your tactical position based on your core tech stack.",
-  },
-  {
-    title: "The Readme Flex",
-    body: "Export dynamic, auto-updating Ultimate Team cards to showcase on your GitHub profile or socials.",
-  },
-] as const;
+import { Suspense } from "react";
+import { Footer } from "@/components/Footer";
+import { HomeReveal } from "@/components/home/HomeReveal";
+import { OmniSearch } from "@/components/home/OmniSearch";
+import { HeroShowcase } from "@/components/home/HeroShowcase";
+import { MostValuablePlayers } from "@/components/home/MostValuablePlayers";
+import { SquadOfTheDay, SquadOfTheDaySkeleton } from "@/components/home/SquadOfTheDay";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { SigningsTicker } from "@/components/home/SigningsTicker";
+import { PitchTexture } from "@/components/home/PitchTexture";
 
 export default function LandingPage() {
   return (
-    <LandingReveal>
-      <main className="relative flex min-h-[calc(100dvh-4rem)] flex-col">
-        <div className="relative mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-center gap-8 self-center px-6 py-6 lg:grid-cols-[1.2fr_1fr] lg:gap-16 lg:px-12">
-          <div className="order-1 text-center lg:text-left">
-            <p className="font-mono text-sm uppercase tracking-[0.3em] text-tm-blue-bright">
-              The developer transfer market
-            </p>
+    <HomeReveal>
+      {/* overflow-x-clip is a safety net, not the fix — every real source of
+          horizontal overflow (the 3D ring, chips, ticker) is contained at
+          its own origin below. clip (not hidden) so it can't interfere with
+          the Navbar's position:sticky in layout.tsx. */}
+      <main className="tg-home relative flex flex-1 flex-col overflow-x-clip">
+        {/* Navbar (h-[var(--nav-h)], in layout.tsx) + this block together
+            fill exactly one screen — the ticker is this block's own last
+            row, not fixed, so scrolling past it reveals Most Valuable
+            Players below. Same max-w-[1400px] + lg:px-[72px] as the navbar
+            so both align on the same outer edges; lg:pt-[72px] is the
+            hero's own breathing room below the (now-slim) navbar. */}
+        <div className="relative flex min-h-[calc(100dvh-var(--nav-h))] flex-col">
+          <PitchTexture />
+          <div className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-stretch gap-10 px-6 pb-10 pt-10 lg:grid-cols-[minmax(0,1fr)_clamp(420px,40vw,680px)] lg:gap-12 lg:px-[72px] lg:pt-[72px] xl:gap-16">
+            <div className="flex flex-col justify-center lg:-translate-x-3 lg:-translate-y-8">
+              <div className="mb-5 flex items-center justify-center gap-2.5 lg:justify-start">
+                <span
+                  aria-hidden
+                  className="h-[7px] w-[7px] rounded-full bg-[var(--tg-accent)] shadow-[0_0_10px_#2fff00]"
+                />
+                <span className="font-mono text-[11px] tracking-[0.32em] text-[var(--tg-accent-dim)] sm:text-[13px]">
+                  THE DEVELOPER TRANSFER MARKET
+                </span>
+              </div>
 
-            <h1 className="mt-2 font-display text-5xl uppercase leading-[0.95] tracking-tight md:text-6xl lg:text-7xl">
-              <span data-reveal-line className="block overflow-hidden">
-                THE DEV
-              </span>
-              <span data-reveal-line className="block overflow-hidden">
-                TRANSFER
-              </span>
-              <span data-reveal-line className="block overflow-hidden">
-                MARKET
-                <span aria-hidden className="glow-green ml-[0.15em] inline-block h-[0.35em] w-[0.35em] bg-value-green" />
-              </span>
-            </h1>
+              <h1 className="text-center font-oswald text-[44px] font-bold uppercase leading-[0.96] tracking-wide text-[var(--tg-fg)] sm:text-[64px] lg:text-left lg:text-[56px] xl:text-[72px] 2xl:text-[92px]">
+                <span data-reveal-line className="block overflow-hidden">
+                  Every dev
+                </span>
+                {/* whitespace-nowrap keeps "has a price■" a single
+                    unbreakable line — without it, "has a" and "price■" can
+                    split across two lines the moment the line is a hair
+                    too narrow for both, turning the headline into three
+                    lines instead of the intended two. */}
+                <span data-reveal-line className="block overflow-hidden whitespace-nowrap">
+                  has a price
+                  <span
+                    aria-hidden
+                    className="ml-2.5 inline-block h-[0.35em] w-[0.35em] bg-[var(--tg-accent)] shadow-[0_0_16px_rgba(47,255,0,0.6)]"
+                  />
+                </span>
+              </h1>
 
-            <p data-reveal="subtitle" className="mx-auto mt-4 max-w-md text-lg text-muted lg:mx-0">
-              Your GitHub, valued like an elite football player. Calculate your market value,
-              check your release clause, and flex your card.
-            </p>
+              <p
+                data-reveal="subtitle"
+                className="mx-auto mt-4 max-w-[480px] text-center text-base leading-relaxed text-[var(--tg-muted)] sm:text-lg lg:mx-0 lg:text-left"
+              >
+                GitHub profiles valued like elite footballers. Repos lined up as full squads. One search does both.
+              </p>
 
-            <div className="mt-6 flex justify-center lg:justify-start">
-              <SearchInput autoFocus ctaLabel="CALCULATE VALUE →" />
+              <div id="scout" className="mt-8 flex scroll-mt-24 justify-center lg:justify-start">
+                <OmniSearch autoFocus />
+              </div>
             </div>
 
-            <div data-reveal="helper" className="mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-              <span className="text-sm text-muted">Try</span>
-              {TRY_USERNAMES.map((username) => (
-                <Link
-                  key={username}
-                  href={`/${username}`}
-                  className="rounded-full border border-border bg-surface-elevated px-3 py-1 font-mono text-sm text-muted transition hover:border-value-green hover:text-foreground"
-                >
-                  {username}
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-6 flex flex-col items-center gap-2 lg:items-start">
-              <span className="text-xs text-muted">Or scout an entire repo</span>
-              <SquadSearchInput />
+            <div data-reveal="showcase" className="flex min-h-0 items-center justify-center">
+              <HeroShowcase />
             </div>
           </div>
 
-          <div className="order-2 -mb-8 origin-top scale-90 lg:order-2 lg:mb-0 lg:scale-100">
-            <DevFan />
-          </div>
+          <SigningsTicker />
         </div>
 
-        <section className="mx-auto w-full max-w-[1400px] px-6 py-10 sm:py-14 lg:px-12 lg:py-16">
-          <p className="text-center font-mono text-xs uppercase tracking-[0.3em] text-muted lg:text-left">
-            How the market works
-          </p>
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {HOW_IT_WORKS.map((item, i) => (
-              <div
-                key={item.title}
-                className="group rounded-xl tm-card p-5 transition-all duration-300 hover:-translate-y-1 hover:border-value-green/50 hover:bg-value-green/5 hover:shadow-[0_0_32px_rgba(0,230,118,0.15)]"
-              >
-                <span className="font-display text-2xl text-value-green/70 transition group-hover:text-value-green group-hover:glow-green-text">
-                  0{i + 1}
-                </span>
-                <h3 className="mt-2 font-table text-base font-bold uppercase tracking-wide">{item.title}</h3>
-                <p className="mt-2 text-sm text-muted">{item.body}</p>
-              </div>
-            ))}
-          </div>
+        <MostValuablePlayers />
+
+        <section data-tg-reveal className="mx-auto w-full max-w-[1400px] px-6 py-6 sm:py-8 lg:px-12">
+          <Suspense fallback={<SquadOfTheDaySkeleton />}>
+            <SquadOfTheDay />
+          </Suspense>
         </section>
 
-        <Ticker />
+        <HowItWorks />
+
+        <Footer minimal />
       </main>
-    </LandingReveal>
+    </HomeReveal>
   );
 }

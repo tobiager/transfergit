@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --conditions=react-server --test lib/**/*.test.ts",
-    "build:legends": "node --env-file=.env.local -r ./scripts/stub-server-only.cjs --import tsx scripts/build-legends.ts"
+    "build:legends": "node --env-file=.env.local -r ./scripts/stub-server-only.cjs --import tsx scripts/build-legends.ts",
+    "warm:squad-of-the-day": "node --import tsx scripts/warm-squad-of-the-day.ts"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.19",

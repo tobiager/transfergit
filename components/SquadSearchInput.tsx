@@ -2,17 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-
-// Accepts "owner/repo" or a github.com repo URL (with or without protocol,
-// www, trailing slash or ".git").
-function parseRepoSlug(input: string): { owner: string; repo: string } | null {
-  const trimmed = input.trim().replace(/\.git$/i, "").replace(/\/+$/, "");
-  const urlMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/\s]+)\/([^/\s]+)/i);
-  const slugMatch = trimmed.match(/^([^/\s]+)\/([^/\s]+)$/);
-  const match = urlMatch ?? slugMatch;
-  if (!match) return null;
-  return { owner: match[1], repo: match[2] };
-}
+import { parseRepoSlug } from "@/lib/parseRepoSlug";
 
 export function SquadSearchInput({ autoFocus = false }: { autoFocus?: boolean }) {
   const [value, setValue] = useState("");
