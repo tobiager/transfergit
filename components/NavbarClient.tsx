@@ -16,7 +16,7 @@ export function NavbarClient({ stars }: { stars: number | null }) {
 
   useEffect(() => {
     function onScroll() {
-      setScrolled(window.scrollY > 4);
+      setScrolled(window.scrollY > 40);
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -25,13 +25,23 @@ export function NavbarClient({ stars }: { stars: number | null }) {
 
   return (
     <header
-      className={`sticky top-0 z-40 backdrop-blur-md transition-colors ${
-        scrolled ? "border-b border-border bg-pitch/80" : "border-b border-transparent bg-pitch/40"
+      className={`sticky top-0 z-40 pt-2 transition-[background-color,backdrop-filter,border-color] duration-300 ${
+        scrolled
+          ? "border-b border-[var(--nav-scrolled-border)] bg-[var(--nav-scrolled-bg)] backdrop-blur-md"
+          : "border-b-0 bg-transparent"
       }`}
     >
-      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
-        <Link href="/" className="shrink-0 text-foreground transition hover:text-value-green">
-          <Logo />
+      {/* Same max-width + side padding as the hero row in app/page.tsx
+          (max-w-[1400px], lg:px-[72px]) so the logo and star pill land
+          exactly on the hero content's outer edges — not a separate
+          max-w-7xl container that centers differently. nav's own height is
+          fixed (60px/76px, the mockup's own bar) — the header's pt-2 above
+          is the small top gap, and --nav-h in globals.css is their sum
+          (68px/84px), not a var nav reads directly anymore, so the two
+          can't drift apart from each other. */}
+      <nav className="mx-auto flex h-[60px] w-full max-w-[1400px] items-center justify-between gap-4 px-4 md:px-6 lg:h-[76px] lg:px-[72px]">
+        <Link href="/" className="shrink-0 text-foreground transition hover:text-accent-bright">
+          <Logo iconSize={40} glow="subtle" />
         </Link>
 
         {isProfile ? (
@@ -52,18 +62,15 @@ export function NavbarClient({ stars }: { stars: number | null }) {
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-9 font-mono text-xs uppercase tracking-[0.12em]">
             <button
               type="button"
               onClick={openModal}
-              className="hidden font-medium text-muted transition hover:text-foreground sm:inline"
+              className="hidden text-muted transition hover:text-accent-bright sm:inline"
             >
               How it works
             </button>
-            <Link
-              href="/hall-of-fame"
-              className="hidden font-medium text-muted transition hover:text-foreground sm:inline"
-            >
+            <Link href="/hall-of-fame" className="hidden text-muted transition hover:text-accent-bright sm:inline">
               Hall of Fame
             </Link>
             <StarButton stars={stars} />
