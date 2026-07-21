@@ -6,10 +6,10 @@
 
 **Your GitHub, valued like a football player.**
 
-[![GitHub stars](https://img.shields.io/github/stars/tobiager/transfergit?style=flat-square&color=111111)](https://github.com/tobiager/transfergit/stargazers)
-[![License: MIT](https://img.shields.io/badge/license-MIT-1a3151?style=flat-square&color=111111)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/tobiager/transfergit?style=flat-square&color=000000)](https://github.com/tobiager/transfergit/stargazers)
+[![License: MIT](https://img.shields.io/badge/license-MIT-1a3151?style=flat-square&color=000000)](LICENSE)
 [![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-Vercel-black?style=flat-square&logo=vercel)](https://transfergit.com)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ffc400?style=flat-square&color=111111)](#contributing)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ffc400?style=flat-square&color=000000)](#contributing)
 
 ### **[⚽ Get your card →](https://transfergit.com)**
 
