@@ -93,11 +93,11 @@ way a player card is, then slotted onto the pitch by commit rank.
 - **Bench** — reserves beyond the starting XI
 - **Squad value** — the summed market value of every player on the pitch
 
-Try it: **`transfergit.com/squad/<owner>/<repo>`** — for example [`transfergit.com/squad/vercel/next.js`](https://transfergit.com/squad/vercel/next.js).
+Try it: **`transfergit.com/squad/<owner>/<repo>`** — for example [`transfergit.com/squad/facebook/react`](https://transfergit.com/squad/facebook/react).
 
 <p align="center">
-  <a href="https://transfergit.com/squad/vercel/next.js">
-    <img src="https://www.transfergit.com/api/og/squad/vercel/next.js?format=full" width="500" alt="vercel/next.js — Repo Squad by Transfergit">
+  <a href="https://transfergit.com/squad/facebook/react">
+    <img src="https://www.transfergit.com/api/og/squad/facebook/react?format=full" width="500" alt="facebook/react — Repo Squad by Transfergit">
   </a>
 </p>
 
