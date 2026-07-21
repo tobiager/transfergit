@@ -7,6 +7,7 @@ import { useValuationModal } from "./ValuationModalContext";
 import { Logo } from "./Logo";
 import { SearchInput } from "./SearchInput";
 import { StarButton } from "./StarButton";
+import { BubbleMenu } from "./BubbleMenu";
 
 export function NavbarClient({ stars }: { stars: number | null }) {
   const [scrolled, setScrolled] = useState(false);
@@ -64,6 +65,7 @@ export function NavbarClient({ stars }: { stars: number | null }) {
                   ↓ Export card
                 </Link>
               )}
+              <BubbleMenu />
             </div>
           </>
         ) : (
@@ -79,6 +81,7 @@ export function NavbarClient({ stars }: { stars: number | null }) {
               Hall of Fame
             </Link>
             <StarButton stars={stars} />
+            <BubbleMenu />
           </div>
         )}
       </nav>

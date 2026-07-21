@@ -109,7 +109,7 @@ export function SquadShell({
       <aside className={`${tab === "export" ? "block" : "hidden"} squad-scroll min-h-0 px-4 py-4 lg:block lg:px-0`}>
         {exportPanel}
         <div className="hidden lg:block">
-          <Footer minimal />
+          <Footer />
         </div>
       </aside>
     </div>

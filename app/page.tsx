@@ -82,7 +82,7 @@ export default function LandingPage() {
 
         <MostValuablePlayers />
 
-        <section data-tg-reveal className="mx-auto w-full max-w-[1400px] px-6 py-6 sm:py-8 lg:px-12">
+        <section id="squad" data-tg-reveal className="mx-auto w-full max-w-[1400px] scroll-mt-24 px-6 py-6 sm:py-8 lg:px-12">
           <Suspense fallback={<SquadOfTheDaySkeleton />}>
             <SquadOfTheDay />
           </Suspense>
@@ -90,7 +90,7 @@ export default function LandingPage() {
 
         <HowItWorks />
 
-        <Footer minimal />
+        <Footer />
       </main>
     </HomeReveal>
   );
