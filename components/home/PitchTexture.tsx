@@ -4,9 +4,21 @@
 // the center line, both touchlines and the kickoff dot on top of the
 // mobile (1b) circle + top glow. Must sit on a `position:relative`
 // ancestor sized to the hero only, not the whole scrollable page.
+//
+// top is pulled up by -var(--nav-h) instead of using inset-0: in the
+// mockup this texture paints the *entire* card from y=0, with the navbar
+// floating transparently on top of it — so the sticky Navbar (which has no
+// background of its own at rest) shows this same gradient/texture through
+// it instead of the flat body color, matching the mockup pixel-for-pixel.
+// The offsets below (top-[80px] etc.) are unchanged and measured from this
+// same y=0 reference, exactly like the mockup's own absolute offsets.
 export function PitchTexture() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
+      style={{ top: "calc(var(--nav-h) * -1)" }}
+    >
       <div className="absolute left-1/2 top-[80px] h-[300px] w-[300px] -translate-x-1/2 rounded-full border-[1.5px] border-[rgba(0,230,118,0.05)] lg:top-[120px] lg:h-[560px] lg:w-[560px]" />
       <div className="absolute inset-x-0 top-0 h-[300px] bg-[radial-gradient(ellipse_90%_100%_at_50%_0%,rgba(0,230,118,0.06),transparent_70%)] lg:h-[420px] lg:bg-[radial-gradient(ellipse_60%_100%_at_70%_0%,rgba(0,230,118,0.06),transparent_70%)]" />
       <div className="absolute left-1/2 top-0 bottom-0 hidden w-[1.5px] -translate-x-1/2 bg-[rgba(0,230,118,0.045)] lg:block" />

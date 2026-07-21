@@ -26,7 +26,7 @@ export default function LandingPage() {
         <div className="relative flex min-h-[calc(100dvh-var(--nav-h))] flex-col">
           <PitchTexture />
           <div className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-stretch gap-10 px-6 pb-10 pt-10 lg:grid-cols-[minmax(0,1fr)_clamp(420px,40vw,680px)] lg:gap-12 lg:px-[72px] lg:pt-[72px] xl:gap-16">
-            <div className="flex flex-col justify-center">
+            <div className="flex flex-col justify-center lg:-translate-x-3 lg:-translate-y-8">
               <div className="mb-5 flex items-center justify-center gap-2.5 lg:justify-start">
                 <span
                   aria-hidden
@@ -41,23 +41,17 @@ export default function LandingPage() {
                 <span data-reveal-line className="block overflow-hidden">
                   Every dev
                 </span>
-                <span data-reveal-line className="block overflow-hidden">
-                  has a{" "}
-                  {/* whitespace-nowrap binds "price" and the square into one
-                      unbreakable unit — without it, the square is a
-                      separately-wrappable inline-block and can end up
-                      alone on its own line below "price" the moment the
-                      line is a hair too narrow for both (exactly the
-                      "detached square" bug). Whatever width this heading
-                      reflows to at any viewport, "price■" now always moves
-                      together. */}
-                  <span className="whitespace-nowrap">
-                    price
-                    <span
-                      aria-hidden
-                      className="ml-2.5 inline-block h-[0.35em] w-[0.35em] bg-[var(--tg-accent)] shadow-[0_0_16px_rgba(47,255,0,0.6)]"
-                    />
-                  </span>
+                {/* whitespace-nowrap keeps "has a price■" a single
+                    unbreakable line — without it, "has a" and "price■" can
+                    split across two lines the moment the line is a hair
+                    too narrow for both, turning the headline into three
+                    lines instead of the intended two. */}
+                <span data-reveal-line className="block overflow-hidden whitespace-nowrap">
+                  has a price
+                  <span
+                    aria-hidden
+                    className="ml-2.5 inline-block h-[0.35em] w-[0.35em] bg-[var(--tg-accent)] shadow-[0_0_16px_rgba(47,255,0,0.6)]"
+                  />
                 </span>
               </h1>
 

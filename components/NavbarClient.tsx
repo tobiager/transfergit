@@ -66,7 +66,7 @@ export function NavbarClient({ stars }: { stars: number | null }) {
             <button
               type="button"
               onClick={openModal}
-              className="hidden text-muted transition hover:text-accent-bright sm:inline"
+              className="hidden font-mono text-xs uppercase tracking-[0.12em] text-muted transition hover:text-accent-bright sm:inline"
             >
               How it works
             </button>

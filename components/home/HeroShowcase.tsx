@@ -2,30 +2,27 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 // Real, pre-generated exports (design/home/TransferGit Home.dc.html §2) — 4
 // cards alternating a player card with the squad card, matching the
 // original mockup's own 4-card ring (rotateY(i*90deg) translateZ(...)), so
 // the hero never renders anything live. Values are read straight off these
-// images, not recomputed. `href` is where a plain click (not a drag) on
-// this card — while it's the frontmost one — navigates to.
+// images, not recomputed. Purely decorative — dragging spins the ring,
+// nothing here navigates anywhere.
 const CARDS = [
-  { user: "@torvalds", val: "€4.80bn", img: "/fan-cards/torvalds.png", alt: "@torvalds's player card", href: "/torvalds" },
+  { user: "@torvalds", val: "€4.80bn", img: "/fan-cards/torvalds.png", alt: "@torvalds's player card" },
   {
     user: "DietrichGebert/ponytail",
     val: "€363.40m",
     img: "/fan-cards/ponytail.png",
     alt: "DietrichGebert/ponytail's squad card",
-    href: "/squad/DietrichGebert/ponytail",
   },
-  { user: "@torvalds", val: "€4.80bn", img: "/fan-cards/torvalds-full.png", alt: "@torvalds's full stats card", href: "/torvalds" },
+  { user: "@torvalds", val: "€4.80bn", img: "/fan-cards/torvalds-full.png", alt: "@torvalds's full stats card" },
   {
     user: "DietrichGebert/ponytail",
     val: "€363.40m",
     img: "/fan-cards/ponytail.png",
     alt: "DietrichGebert/ponytail's squad card",
-    href: "/squad/DietrichGebert/ponytail",
   },
 ] as const;
 
@@ -53,7 +50,7 @@ const FAN_ANGLES = [0, 22, -22, 46];
 const CARD_ASPECT = 4 / 5; // width / height
 // Pushed further out than a "just touching" ring so there's real empty air
 // between cards (matching the mockup) instead of them reading as stacked.
-const RADIUS_MARGIN = 1;
+const RADIUS_MARGIN = 1.6;
 const STAGE_MULTIPLIER = 2.4; // container width needed relative to card width so flanking cards never clip
 const CAPTION_RESERVED_PX = 102; // vertical room left below the ring for the caption + hint
 // Target range is ~285-385px on ordinary viewports — but only MAX_CARD_W is
@@ -68,14 +65,18 @@ const REVOLUTION_MS = 40000;
 const AUTO_ROTATE_DIR = -1;
 const DRAG_SENSITIVITY = 0.35; // deg per px
 const CLICK_MAX_DRAG_PX = 5; // pointerdown→pointerup movement below this counts as a click, not a drag
+const RESUME_DELAY_MS = 3000; // fixed pause after any release (click or drag) before auto-rotate picks back up
+const COAST_HALF_LIFE_MS = 250; // inertia decay: velocity halves every this many ms
+const COAST_DECAY_PER_MS = Math.pow(0.5, 1 / COAST_HALF_LIFE_MS);
+const COAST_STOP_DEG_PER_MS = 0.001; // below this, coasting is imperceptible — just freeze
 
-// Just two modes now — no snap, no post-release pause. Releasing a drag (or
-// letting go of a keyboard nudge) drops straight back into "auto" from
-// whatever angle the ring is already at: no easing tween, no jump, no
-// waiting. That IS the "fluid, perpetual, organic orbit" — a snap-to-slot
-// tween is exactly the kind of aggressive, artificial-looking motion this
-// replaces.
-type Mode = "auto" | "drag";
+// pointerdown always freezes the ring in place (mode leaves "auto" the
+// instant a finger/pointer touches down, whether or not it ever moves).
+// "drag" tracks the pointer 1:1 and its recent velocity; on release, a real
+// drag hands that velocity to "coast" (inertia, decaying to a stop), while
+// a near-stationary release (a plain click) goes straight to "paused" —
+// either way, a single fixed timer brings the ring back to "auto" ~3s later.
+type Mode = "auto" | "drag" | "coast" | "paused";
 
 // Depth dimming only — no billboarding, no manual scale. This is a classic
 // ring: cards keep their fixed rotateY(slot) + translateZ(radius) transform
@@ -91,7 +92,6 @@ function depthStyle(effectiveDeg: number): { filter: string; zIndex: number } {
 }
 
 export function HeroShowcase() {
-  const router = useRouter();
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
@@ -107,7 +107,15 @@ export function HeroShowcase() {
   const frontRef = useRef(0);
   const rafRef = useRef<number | undefined>(undefined);
   const lastTickRef = useRef<number | undefined>(undefined);
-  const dragRef = useRef({ startX: 0, startAngle: 0, maxMove: 0 });
+  const dragRef = useRef({ startX: 0, startAngle: 0, maxMove: 0, lastX: 0, lastT: 0, velocity: 0 });
+  const coastVelocityRef = useRef(0);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -176,11 +184,19 @@ export function HeroShowcase() {
 
       if (modeRef.current === "auto") {
         sceneAngleRef.current += degPerMs * dt;
+      } else if (modeRef.current === "coast") {
+        sceneAngleRef.current += coastVelocityRef.current * dt;
+        coastVelocityRef.current *= Math.pow(COAST_DECAY_PER_MS, dt);
+        if (Math.abs(coastVelocityRef.current) < COAST_STOP_DEG_PER_MS) {
+          coastVelocityRef.current = 0;
+          modeRef.current = "paused";
+        }
       }
       // "drag" mode: onPointerMove already writes sceneAngleRef.current
       // directly — this loop just keeps reading and rendering whatever it
-      // currently holds, so drag and auto-rotate are always the same
-      // single source of truth and there's nothing to hand off on release.
+      // currently holds. "paused" mode: nothing advances the angle until
+      // the resume timer (started on pointerup) flips the mode back to
+      // "auto".
 
       applyAngle(sceneAngleRef.current);
       rafRef.current = requestAnimationFrame(tick);
@@ -192,38 +208,55 @@ export function HeroShowcase() {
     };
   }, [reducedMotion]);
 
-  // The ring spins on its own, always — nothing pauses it (not hover, not
-  // idling) except actually grabbing it. pointerdown freezes the
-  // auto-advance right there (mode leaves "auto", so the tick loop stops
-  // adding to the angle while still rendering it every frame); pointermove
-  // drives the angle 1:1 with the pointer; pointerup drops straight back
-  // into "auto" from that exact angle — no snap, no easing, no pause. A
-  // release with almost no movement counts as a click on the front card.
+  // Purely decorative, no navigation. pointerdown freezes the auto-advance
+  // right there, whether or not it turns into a drag (mode leaves "auto"
+  // instantly, so the tick loop stops adding to the angle while still
+  // rendering it every frame). pointermove drives the angle 1:1 with the
+  // pointer and keeps a running velocity estimate. pointerup either hands
+  // that velocity to "coast" (a real drag — inertia, decaying to a stop)
+  // or goes straight to "paused" (a plain click — no movement, no effect
+  // beyond the freeze); either way a single fixed timer flips the mode
+  // back to "auto" ~3s later.
   function onPointerDown(e: React.PointerEvent) {
     if (reducedMotion) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     modeRef.current = "drag";
-    dragRef.current = { startX: e.clientX, startAngle: sceneAngleRef.current, maxMove: 0 };
+    coastVelocityRef.current = 0;
+    dragRef.current = {
+      startX: e.clientX,
+      startAngle: sceneAngleRef.current,
+      maxMove: 0,
+      lastX: e.clientX,
+      lastT: performance.now(),
+      velocity: 0,
+    };
   }
   function onPointerMove(e: React.PointerEvent) {
     if (modeRef.current !== "drag") return;
     const d = dragRef.current;
+    const now = performance.now();
     d.maxMove = Math.max(d.maxMove, Math.abs(e.clientX - d.startX));
     sceneAngleRef.current = d.startAngle + (e.clientX - d.startX) * DRAG_SENSITIVITY;
+    const dt = now - d.lastT;
+    if (dt > 0) {
+      const dDeg = (e.clientX - d.lastX) * DRAG_SENSITIVITY;
+      d.velocity = dDeg / dt;
+    }
+    d.lastX = e.clientX;
+    d.lastT = now;
   }
   function onPointerUp() {
     if (modeRef.current !== "drag") return;
     const wasClick = dragRef.current.maxMove < CLICK_MAX_DRAG_PX;
-    modeRef.current = "auto";
-    if (wasClick) router.push(CARDS[frontRef.current].href);
+    modeRef.current = wasClick ? "paused" : "coast";
+    coastVelocityRef.current = wasClick ? 0 : dragRef.current.velocity;
+    resumeTimerRef.current = setTimeout(() => {
+      modeRef.current = "auto";
+    }, RESUME_DELAY_MS);
   }
   function onKeyDown(e: React.KeyboardEvent) {
     if (reducedMotion) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      router.push(CARDS[frontRef.current].href);
-      return;
-    }
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
     // A direct nudge, not a tween — consistent with "no eased snapping"
@@ -251,8 +284,8 @@ export function HeroShowcase() {
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
           onKeyDown={onKeyDown}
-          role={reducedMotion ? undefined : "link"}
-          aria-label={reducedMotion ? undefined : `Open ${CARDS[front].user} — drag to spin, click to open`}
+          role={reducedMotion ? undefined : "group"}
+          aria-label={reducedMotion ? undefined : "Card showcase — drag to spin"}
           tabIndex={reducedMotion ? undefined : 0}
           className={`relative touch-pan-y select-none ${reducedMotion ? "" : "cursor-grab active:cursor-grabbing"}`}
           style={{ width: stageW, height: cardH, perspective: 1300 }}
@@ -313,7 +346,7 @@ export function HeroShowcase() {
           </div>
         </div>
 
-        <div className="mt-[50px] flex items-center gap-2.5 font-mono text-sm transition-opacity duration-300">
+        <div className="mt-[68px] flex items-center gap-2.5 font-mono text-sm transition-opacity duration-300">
           <span className="text-[var(--tg-fg-soft)]">{CARDS[front].user}</span>
           <span className="font-bold text-[var(--tg-accent)]">{CARDS[front].val}</span>
         </div>
