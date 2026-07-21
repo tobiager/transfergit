@@ -193,7 +193,7 @@ export default async function PlayerPage({ params }: PageProps) {
 
         <ScoutCta />
       </main>
-      <Footer />
+      <Footer minimal />
     </ProfileReveal>
   );
 }

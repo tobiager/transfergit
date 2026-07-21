@@ -26,22 +26,26 @@ export function HomeReveal({ children }: { children: ReactNode }) {
     const showcase = container.querySelector("[data-reveal='showcase']");
     const sections = container.querySelectorAll<HTMLElement>("[data-tg-reveal]");
 
+    // Horizontal insets are pushed far outside the box (-100%) so the clip
+    // rect never clips inline content that overflows a line's own width
+    // (e.g. the square after "price" at wide breakpoints) — only top/bottom
+    // do the actual reveal wipe.
     if (reduceMotion) {
       gsap.set([...headlineLines, subtitle, input, helper, showcase], {
         opacity: 1,
         y: 0,
-        clipPath: "inset(0 0 0% 0)",
+        clipPath: "inset(0 -100% 0% -100%)",
       });
       gsap.set(sections, { opacity: 1, y: 0 });
       return;
     }
 
-    gsap.set(headlineLines, { clipPath: "inset(0 0 100% 0)" });
+    gsap.set(headlineLines, { clipPath: "inset(0 -100% 100% -100%)" });
     gsap.set([subtitle, input, helper, showcase], { opacity: 0, y: 20 });
 
     const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
     heroTl
-      .to(headlineLines, { clipPath: "inset(0 0 0% 0)", duration: 0.5, stagger: 0.12 })
+      .to(headlineLines, { clipPath: "inset(0 -100% 0% -100%)", duration: 0.5, stagger: 0.12 })
       .to(subtitle, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
       .to(input, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
       .to(helper, { opacity: 1, y: 0, duration: 0.35 }, "-=0.2")
