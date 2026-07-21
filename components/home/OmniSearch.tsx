@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { detectQueryKind, parseRepoSlug, type QueryKind } from "@/lib/parseRepoSlug";
 import { SCOUT_SQUAD_EVENT } from "./ScoutCta";
 
-const CHIPS = ["torvalds", "vercel/next.js", "addyosmani", "facebook/react"];
+const CHIPS = ["torvalds", "addyosmani", "facebook/react"];
 const SQUAD_HINT_MS = 2000;
 const PULSE_MS = 1600;
 
