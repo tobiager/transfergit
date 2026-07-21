@@ -222,6 +222,22 @@ body,
   }
 }
 
+/* Floating player popovers (pitch + reserves hover cards) sit directly on
+   top of avatars/pitch lines, not nested inside another .tm-card — so they
+   use the higher-opacity solid glass tone instead of .tm-card's default,
+   which is tuned for translucency over a static page background, not
+   legibility over moving content underneath. */
+.tm-popover {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-solid);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 0 var(--glass-highlight) inset,
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    0 18px 36px -16px rgba(0, 0, 0, 0.65);
+}
+
 /* Selective tint accents on top of .tm-card — injury (red), trophies
    (gold) and export (green) each get a whole-card wash; every other
    section keeps the plain neutral glass border. */

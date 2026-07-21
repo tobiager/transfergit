@@ -13,6 +13,9 @@ export function NavbarClient({ stars }: { stars: number | null }) {
   const { openModal } = useValuationModal();
   const pathname = usePathname();
   const isProfile = pathname !== "/" && pathname !== "/hall-of-fame" && !pathname.startsWith("/api");
+  // Squad already has its own "EXPORT THE SQUAD" sidebar panel — the navbar's
+  // export shortcut would just duplicate it.
+  const isSquad = pathname.startsWith("/squad/");
 
   useEffect(() => {
     function onScroll() {
@@ -53,12 +56,14 @@ export function NavbarClient({ stars }: { stars: number | null }) {
               <div className="hidden md:block">
                 <StarButton stars={stars} />
               </div>
-              <Link
-                href="#export"
-                className="glow-green flex h-9 shrink-0 items-center rounded-md bg-value-green px-4 font-display text-sm text-pitch transition hover:brightness-110"
-              >
-                ↓ Export card
-              </Link>
+              {!isSquad && (
+                <Link
+                  href="#export"
+                  className="glow-green flex h-9 shrink-0 items-center rounded-md bg-value-green px-4 font-display text-sm text-pitch transition hover:brightness-110"
+                >
+                  ↓ Export card
+                </Link>
+              )}
             </div>
           </>
         ) : (

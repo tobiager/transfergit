@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { PanelLeft } from "lucide-react";
+import { Footer } from "@/components/Footer";
 
 const TABS = [
   { id: "pitch", label: "Pitch" },
@@ -99,9 +100,17 @@ export function SquadShell({
         <div className="pitch-stage flex min-h-0 flex-1 items-center justify-center">{pitch}</div>
       </section>
 
-      {/* Export column */}
+      {/* Export column. Desktop's footer lives here (not as a page-level
+          footer below everything) because .squad-shell locks to 100dvh with
+          overflow:hidden at that breakpoint — this column's own
+          .squad-scroll is the only place content can scroll into view.
+          Mobile/tablet gets the real page-level Footer instead (see
+          app/squad/[owner]/[repo]/page.tsx), so this copy is lg-only. */}
       <aside className={`${tab === "export" ? "block" : "hidden"} squad-scroll min-h-0 px-4 py-4 lg:block lg:px-0`}>
         {exportPanel}
+        <div className="hidden lg:block">
+          <Footer minimal />
+        </div>
       </aside>
     </div>
   );

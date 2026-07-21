@@ -123,7 +123,7 @@ export function PlayerChip({
               ref={(node) => refs.setFloating(node)}
               style={floatingStyles}
               {...getFloatingProps()}
-              className="z-50 w-60 select-text rounded-lg tm-card p-4 text-left"
+              className="z-50 w-60 select-text rounded-lg tm-popover p-4 text-left"
             >
               <PlayerPopoverCard player={player} />
             </div>
@@ -175,7 +175,7 @@ export function PlayerChip({
             ref={(node) => refs.setFloating(node)}
             style={floatingStyles}
             {...getFloatingProps()}
-            className="z-50 w-60 select-text rounded-lg tm-card p-4 text-left"
+            className="z-50 w-60 select-text rounded-lg tm-popover p-4 text-left"
           >
             <PlayerPopoverCard player={player} />
           </div>
