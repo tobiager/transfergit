@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchGithubProfile, fetchOrgJoinYears } from "@/lib/github";
+import { getGithubProfile, fetchOrgJoinYears } from "@/lib/github";
 import { buildPlayer, buildOrgTransfers } from "@/lib/player";
 import { percentileOf, percentileTier } from "@/lib/ranking";
 import { PlayerHeader } from "@/components/PlayerHeader";
@@ -17,6 +17,7 @@ import { ScoutCta } from "@/components/ScoutCta";
 import { ProfileReveal } from "@/components/ProfileReveal";
 import { ProfileTabs } from "@/components/ProfileTabs";
 import { StatCards, type StatCardData } from "@/components/StatCards";
+import { PartialDataBanner } from "@/components/PartialDataBanner";
 import { Footer } from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -63,7 +64,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
 export default async function PlayerPage({ params }: PageProps) {
   const { username } = await params;
-  const profile = await fetchGithubProfile(username);
+  const profile = await getGithubProfile(username);
 
   if (!profile) notFound();
 
@@ -109,7 +110,9 @@ export default async function PlayerPage({ params }: PageProps) {
     },
     {
       label: "Commits this season",
-      sublabel: `${currentSeason?.year ?? new Date().getFullYear()} season`,
+      sublabel: currentSeason?.pending
+        ? "syncing…"
+        : `${currentSeason?.year ?? new Date().getFullYear()} season`,
       value: currentSeason?.commits ?? 0,
       compact: true,
       ringPercent: commitsPercentile,
@@ -129,7 +132,13 @@ export default async function PlayerPage({ params }: PageProps) {
   return (
     <ProfileReveal>
       <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pt-8 md:px-6">
-        <div id="overview" className="scroll-mt-28 space-y-6">
+        <div id="overview" className="scroll-mt-[calc(var(--nav-h)+var(--tabs-h)+16px)] space-y-6">
+          {!player.dataCompleteness.complete && (
+            <PartialDataBanner
+              missingYears={player.dataCompleteness.missingYears}
+              degraded={player.dataCompleteness.degraded}
+            />
+          )}
           <PlayerHeader player={player} tier={tier} />
           <StatCards items={statCards} />
         </div>
@@ -140,10 +149,10 @@ export default async function PlayerPage({ params }: PageProps) {
       <main className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6 md:px-6">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="space-y-4">
-            <div id="transfers" className="scroll-mt-28">
+            <div id="transfers" className="scroll-mt-[calc(var(--nav-h)+var(--tabs-h)+16px)]">
               <TransferHistory transfers={player.transfers} />
             </div>
-            <div id="injuries" className="scroll-mt-28">
+            <div id="injuries" className="scroll-mt-[calc(var(--nav-h)+var(--tabs-h)+16px)]">
               <InjuryHistory injuries={player.injuries} />
             </div>
             <PositionDetailCard position={player.position} />
@@ -151,13 +160,13 @@ export default async function PlayerPage({ params }: PageProps) {
 
           <div className="space-y-4">
             <SeasonStatsSummary seasons={player.seasons} />
-            <div id="trophies" className="scroll-mt-28">
+            <div id="trophies" className="scroll-mt-[calc(var(--nav-h)+var(--tabs-h)+16px)]">
               <TrophyCabinet player={player} />
             </div>
           </div>
         </div>
 
-        <div id="stats" className="scroll-mt-28 space-y-4">
+        <div id="stats" className="scroll-mt-[calc(var(--nav-h)+var(--tabs-h)+16px)] space-y-4">
           <div data-reveal="chart" className="rounded-xl tm-card p-4">
             <div className="mb-2 flex items-baseline justify-between px-1">
               <h2 className="font-table text-lg font-bold uppercase tracking-wide">
@@ -178,7 +187,7 @@ export default async function PlayerPage({ params }: PageProps) {
           <SeasonStatsTable seasons={player.seasons} />
         </div>
 
-        <div id="export" className="scroll-mt-28">
+        <div id="export" className="scroll-mt-[calc(var(--nav-h)+var(--tabs-h)+16px)]">
           <ExportPanel login={player.login} marketValueFormatted={player.marketValueFormatted} />
         </div>
 

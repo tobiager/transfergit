@@ -28,13 +28,31 @@ export function SeasonStatsSummary({ seasons }: { seasons: Player["seasons"] }) 
                 {i === 0 ? `/${(s.year + 1).toString().slice(-2)}` : ""}
               </td>
               <td className="px-4 py-2 text-right tabular-nums text-value-green">
-                {s.hasData ? formatNumber(s.commits) : <span className="font-normal text-muted">—</span>}
+                {s.pending ? (
+                  <span className="font-normal text-muted animate-pulse">…</span>
+                ) : s.hasData ? (
+                  formatNumber(s.commits)
+                ) : (
+                  <span className="font-normal text-muted">—</span>
+                )}
               </td>
               <td className="px-4 py-2 text-right tabular-nums">
-                {s.hasData ? formatNumber(s.pullRequests) : <span className="text-muted">—</span>}
+                {s.pending ? (
+                  <span className="text-muted animate-pulse">…</span>
+                ) : s.hasData ? (
+                  formatNumber(s.pullRequests)
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
               </td>
               <td className="px-4 py-2 text-right tabular-nums">
-                {s.hasData ? formatNumber(s.reviews) : <span className="text-muted">—</span>}
+                {s.pending ? (
+                  <span className="text-muted animate-pulse">…</span>
+                ) : s.hasData ? (
+                  formatNumber(s.reviews)
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
               </td>
             </tr>
           ))}

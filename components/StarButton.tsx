@@ -1,32 +1,32 @@
 import Link from "next/link";
 import { formatNumber } from "@/lib/format";
 
-function GithubIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden className="transition group-hover:text-value-green">
-      <path d="M12 1C5.9225 1 1 5.9225 1 12c0 4.8656 3.14975 8.9787 7.52075 10.4362.5.0975.6825-.2225.6825-.4938v-1.7275c-3.06.665-3.7075-1.475-3.7075-1.475-.5-1.27-1.2213-1.6088-1.2213-1.6088-.9987-.6825.0763-.6688.0763-.6688 1.105.0762 1.6862 1.135 1.6862 1.135.98 1.6787 2.5725 1.1938 3.1988.9125.0988-.71.3838-1.1938.6975-1.4688-2.435-.2762-4.9975-1.2175-4.9975-5.4212 0-1.1975.4275-2.175 1.1275-2.9412-.1125-.2763-.4888-1.3875.1075-2.8925 0 0 .92-.2938 3.0175.9862.875-.2438 1.8125-.365 2.7475-.3688.935.0037 1.8725.125 2.75.3688 2.0975-1.28 3.0163-.99 3.0163-.99.5975 1.505.2213 2.6163.11 2.8925.7013.7663 1.1263 1.7438 1.1263 2.9413 0 4.2137-2.5675 5.1412-5.0125 5.4137.3925.3387.745.995.745 2.0075 0 1.45-.0125 2.6175-.0125 2.9738 0 .2738.1825.5975.6925.4963C19.8525 20.9762 23 16.8637 23 12 23 5.9225 18.0775 1 12 1Z" />
-    </svg>
-  );
-}
-
-function StarIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden className="text-value-green">
-      <path d="M12 2.5l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.6l-6.1 3.4 1.5-6.8-5.2-4.7 6.9-.7L12 2.5z" />
-    </svg>
-  );
-}
-
+// GitHub mark + star pill (design/home/TransferGit Home.dc.html's nav) — real
+// count from lib/repoStats.ts (1h cache), hidden below 20 to skip a
+// not-yet-meaningful number rather than show a misleading "3". Neutral at
+// rest, star + glow turn accent-green on hover.
 export function StarButton({ stars }: { stars: number | null }) {
   return (
     <Link
       href="https://github.com/tobiager/transfergit"
       target="_blank"
       rel="noreferrer"
-      className="group flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-muted backdrop-blur-md transition hover:border-value-green/60 hover:bg-white/10 hover:text-foreground"
+      aria-label="Star on GitHub"
+      className="group flex h-10 shrink-0 items-center gap-2 rounded-full border border-border px-4 font-mono text-xs text-foreground backdrop-blur-md transition duration-200 hover:border-accent-bright hover:shadow-[0_0_14px_rgba(47,255,0,0.25)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-bright"
     >
-      <GithubIcon />
-      <StarIcon />
+      <svg
+        aria-hidden
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+        fill="currentColor"
+        className="shrink-0 text-foreground transition-colors duration-200 group-hover:text-accent-bright"
+      >
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+      </svg>
+      <span aria-hidden className="text-value-green">
+        ★
+      </span>
       {stars !== null && stars >= 20 && <span className="tabular-nums text-value-green">{formatNumber(stars)}</span>}
     </Link>
   );

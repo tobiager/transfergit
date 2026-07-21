@@ -1,5 +1,5 @@
 import type { GithubProfile, MarketValuePoint } from "./types";
-import { calculateAgeYears, formatMarketValue } from "./format";
+import { calculateAgeYears, formatMarketValue } from "./format.ts";
 
 // -----------------------------------------------------------------------
 // Market value formula (easy to tune: everything is a constant here).
@@ -22,7 +22,10 @@ const STAR_WEIGHT = 4_000;
 const FOLLOWER_WEIGHT = 6_000;
 const PR_WEIGHT = 2_500;
 const POPULAR_REPO_WEIGHT = 25_000;
-const POPULAR_REPO_STAR_THRESHOLD = 10;
+// Exported: also used by lib/squad/valuation.ts's light batch valuation,
+// which counts "popular repos" from its own reduced GraphQL fetch without
+// going through computeValuationTimeline.
+export const POPULAR_REPO_STAR_THRESHOLD = 10;
 
 const FORM_WINDOW_COMMITS = 2_000;
 const FORM_MULTIPLIER_CAP = 0.5;
@@ -79,6 +82,31 @@ export function computeValuationTimeline(profile: GithubProfile): ValuationTimel
   const createdYear = new Date(profile.createdAt).getFullYear();
   const years = profile.contributionsByYear.map((c) => c.year).sort((a, b) => a - b);
   const currentYear = new Date().getFullYear();
+
+  // No contribution-year data at all (the REST degraded fallback in
+  // lib/github.ts's getGithubProfile — GraphQL down/over budget — doesn't
+  // have it). A real, if reduced, value from what the REST fallback DOES
+  // have (followers, repos, account age) beats collapsing to the bare
+  // BASE_VALUE floor.
+  if (years.length === 0) {
+    const starsTotal = profile.repositories.reduce((sum, r) => sum + r.stars, 0);
+    const reposOver10Stars = profile.repositories.filter((r) => r.stars > POPULAR_REPO_STAR_THRESHOLD).length;
+    const value = computeMarketValue({
+      commitsTotal: 0,
+      starsTotal,
+      followers: profile.followers,
+      prsTotal: 0,
+      reposOver10Stars,
+      commitsLast12Months: profile.lastYearCommits,
+      accountAgeYears: calculateAgeYears(profile.createdAt),
+    });
+    return {
+      history: [{ year: currentYear, value }],
+      current: value,
+      currentFormatted: formatMarketValue(value),
+      record: { value, formatted: formatMarketValue(value), year: currentYear },
+    };
+  }
 
   const history: MarketValuePoint[] = years.map((year) => {
     const cumulativeCommits = profile.contributionsByYear

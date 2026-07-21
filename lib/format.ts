@@ -93,6 +93,10 @@ export function seededFileNumber(login: string): string {
   return String(hash % 100_000).padStart(5, "0");
 }
 
+export function pluralize(count: number, singular: string, plural: string = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function calculateAgeYears(fromIso: string, toDate: Date = new Date()): number {
   const from = new Date(fromIso);
   let age = toDate.getFullYear() - from.getFullYear();

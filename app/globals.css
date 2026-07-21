@@ -5,6 +5,32 @@
    light theme, no toggle. OG cards never read these — they hardcode the
    same dark palette in app/api/og/_shared/theme.ts (Satori can't read CSS vars). */
 :root {
+  /* Navbar height — matches NavbarClient.tsx's header (pt-2) + nav
+     (h-[...]) combined exactly, so this is a plain WYSIWYG sum, no
+     measuring needed. Single source of truth for anything sizing itself
+     against "the rest of the viewport minus the navbar" (home's hero
+     block, /squad's match-center shell) — keep both in sync with this if
+     the navbar's own padding/height ever changes. */
+  --nav-h: 68px;
+  /* ProfileTabs row height (py-3 + text) — used to stack it flush under
+     the sticky navbar and to keep anchor targets (#stats etc.) landing
+     below both bars instead of under them. */
+  --tabs-h: 45px;
+  /* Scrolled-state glass — home overrides both to near-black/green tones
+     below (body:has(.tg-home)) so the navbar doesn't show the navy
+     floodlight theme over its own near-black background; every other
+     route keeps this default, unchanged from before. */
+  --nav-scrolled-bg: rgba(6, 10, 18, 0.8);
+  --nav-scrolled-border: var(--border);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --nav-h: 84px;
+  }
+}
+
+:root {
   --pitch: #060a12;
   --pitch-elevated: #0d1420;
   --surface: #0b111c;
@@ -19,6 +45,18 @@
   --value-green-rgb: 0, 230, 118;
   --value-red: #e5484d;
   --gold: #ffc400;
+  /* Brighter accent from the home redesign (design/home/TransferGit
+     Home.dc.html), promoted to :root because the shared Navbar/Footer use it
+     for hover/glow states on every route — everything else about each
+     page's own palette (pitch bg, value-green readings, etc.) is untouched. */
+  --accent-bright: #2fff00;
+  --accent-bright-rgb: 47, 255, 0;
+  /* Home page's near-black background — also promoted to :root (not just
+     .tg-home) so body:has(.tg-home) below can read it too; see that rule's
+     comment for why. #0A0F0D is the mockup's actual page background (the
+     frame inside its design canvas) — #060A08 was only the surrounding
+     canvas chrome, not real page content. */
+  --tg-bg: #0a0f0d;
   --card-border: rgba(255, 255, 255, 0.06);
   --card-inset-highlight: rgba(255, 255, 255, 0.03);
   --grid-line: rgba(255, 255, 255, 0.05);
@@ -42,6 +80,7 @@
   --color-value-green: var(--value-green);
   --color-value-red: var(--value-red);
   --color-gold: var(--gold);
+  --color-accent-bright: var(--accent-bright);
   --font-display: var(--font-display);
   --font-table: var(--font-table);
   --font-body: var(--font-body);
@@ -69,6 +108,24 @@ body {
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* The sticky Navbar sits in layout.tsx, above <main> in the DOM — on every
+   other route that's invisible (both are the same navy --pitch), but the
+   home page's <main class="tg-home"> paints its own, deliberately different
+   near-black background starting at its own box. At rest the navbar has no
+   background of its own (fully transparent, see NavbarClient.tsx), so
+   without this it shows body's navy floodlight bg peeking through right
+   above the hero's near-black one — a visible seam exactly at the navbar's
+   bottom edge. :has() scopes this to only the route that renders .tg-home. */
+body:has(.tg-home) {
+  background: var(--tg-bg);
+  /* Same reasoning as --tg-bg above, for the navbar's scrolled-state glass
+     (NavbarClient.tsx) — #141c18 matches .tg-home's own --tg-border-soft,
+     hardcoded here since custom properties don't cascade from a
+     descendant (.tg-home) up to this ancestor (body). */
+  --nav-scrolled-bg: rgba(10, 15, 13, 0.85);
+  --nav-scrolled-border: #141c18;
 }
 
 /* Barely-there grid: low-opacity lines that fade out entirely behind the
@@ -102,6 +159,10 @@ body::before {
   font-family: var(--font-mono), ui-monospace, monospace;
 }
 
+.font-oswald {
+  font-family: var(--font-oswald), sans-serif;
+}
+
 /* Neon-green glow, reused by the SCOUT button, market-value box, ticker
    bar, featured fan card and export buttons. */
 .glow-green {
@@ -124,10 +185,19 @@ body,
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-:focus-visible {
-  outline: 2px solid var(--tm-blue-bright);
-  outline-offset: 2px;
-  border-radius: 4px;
+/* In @layer base so Tailwind's own @layer utilities (e.g. an element that
+   opts out with focus:outline-none because it shows its own focus state a
+   different way, like the omnibox's container glow) can still win — Tailwind
+   v4 orders utilities after base regardless of selector specificity, but
+   only within the layer system. An unlayered rule here would always beat
+   utilities no matter what, which is what caused the omnibox input to show
+   this outline THROUGH its own focus:outline-none. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent-bright);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 /* Glass card: first-level cards only (header, stat cards, sections, export).
@@ -150,6 +220,22 @@ body,
   .tm-card {
     background: var(--glass-bg-solid);
   }
+}
+
+/* Floating player popovers (pitch + reserves hover cards) sit directly on
+   top of avatars/pitch lines, not nested inside another .tm-card — so they
+   use the higher-opacity solid glass tone instead of .tm-card's default,
+   which is tuned for translucency over a static page background, not
+   legibility over moving content underneath. */
+.tm-popover {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-solid);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 0 var(--glass-highlight) inset,
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    0 18px 36px -16px rgba(0, 0, 0, 0.65);
 }
 
 /* Selective tint accents on top of .tm-card — injury (red), trophies
@@ -270,6 +356,135 @@ body,
   }
 }
 
+/* ── Home redesign (design/home/TransferGit Home.dc.html) ─────────────
+   Scoped under .tg-home instead of overwriting the shared :root tokens
+   above — the mockup's near-black page background is deliberately louder
+   than the rest of the app's navy floodlight theme, and the profile/squad
+   pages keep their own background exactly as before. The bright accent
+   itself (--accent-bright) IS shared globally — see :root above — because
+   the Navbar and Footer (rendered on every route) use the mockup's style
+   too; only the background/surface tokens here are home-only. */
+.tg-home {
+  --tg-surface: #0c1310;
+  --tg-surface-elevated: #0d1512;
+  --tg-border: #1b2420;
+  --tg-border-soft: #141c18;
+  --tg-fg: #f2faf5;
+  --tg-fg-soft: #e8f5ee;
+  --tg-muted: #9db3a8;
+  --tg-muted-dim: #7e948a;
+  --tg-muted-faint: #5c7168;
+  --tg-accent: var(--accent-bright);
+  --tg-accent-dim: #00e676;
+  --tg-red: #ff4d4d;
+  --tg-blue: #66b3ff;
+  --tg-ticker-h: 36px;
+  background: var(--tg-bg);
+}
+
+@media (min-width: 640px) {
+  .tg-home {
+    --tg-ticker-h: 48px;
+  }
+}
+
+/* The "Latest signings" ticker sits in normal flow as the hero's own last
+   row (not fixed to the viewport) — its height still needs to be fixed so
+   the hero block above it (min-h-[calc(100dvh-var(--nav-h))]) can reserve exact space
+   for it. The safe-area padding just keeps its text clear of the iPhone
+   home-indicator gesture bar, since it lands at the physical bottom edge of
+   the first screen before any scrolling happens. */
+.tg-ticker {
+  height: var(--tg-ticker-h);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes tgMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes tgBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes tgSheen {
+  0% {
+    transform: translateX(-130%) skewX(-20deg);
+  }
+  60%,
+  100% {
+    transform: translateX(230%) skewX(-20deg);
+  }
+}
+
+@keyframes tgGlowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 24px rgba(47, 255, 0, 0.35), 0 0 2px rgba(47, 255, 0, 0.9);
+  }
+  50% {
+    box-shadow: 0 0 42px rgba(47, 255, 0, 0.55), 0 0 2px rgba(47, 255, 0, 0.9);
+  }
+}
+
+@keyframes tgFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 32s on mobile / 40s from sm up — matches the mockup's 1a (desktop) vs 1b
+   (mobile) ticker durations exactly. */
+.tg-marquee {
+  animation: tgMarquee 32s linear infinite;
+}
+
+@media (min-width: 640px) {
+  .tg-marquee {
+    animation-duration: 40s;
+  }
+}
+
+.tg-blink {
+  animation: tgBlink 1.1s step-end infinite;
+}
+
+.tg-sheen {
+  animation: tgSheen 4.5s ease-in-out infinite;
+}
+
+.tg-glow-pulse {
+  animation: tgGlowPulse 3s ease-in-out infinite;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-marquee,
+  .tg-blink,
+  .tg-sheen,
+  .tg-glow-pulse,
+  [data-tg-fade-up] {
+    animation: none !important;
+  }
+}
+
 table {
   font-variant-numeric: tabular-nums;
 }
@@ -292,6 +507,70 @@ table {
   );
   background-size: 800px 100%;
   animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Squad match center ──────────────────────────────────────────────
+   Desktop with enough vertical room: the /squad page locks to exactly one
+   viewport (navbar + 3-column shell, zero page scroll) — only the side
+   columns scroll, internally. Short desktop windows (<680px tall) skip all
+   of this and fall back to normal page scroll so the pitch never gets
+   compressed into illegibility. Widths (lg 2-col / xl 3-col) are handled
+   by Tailwind classes on the shell markup; only the height-dependent
+   behavior lives here. */
+@media (min-width: 1024px) and (min-height: 680px) {
+  .squad-shell {
+    height: calc(100dvh - var(--nav-h) - 1px); /* minus the navbar + its border-b */
+    overflow: hidden;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .squad-scroll {
+    overflow-y: auto;
+    /* Contain the scroll: no chaining to the body (which would look like the
+       whole page jumps when the list hits its end), and reserve the
+       scrollbar's space up-front so showing/hiding it never shifts layout. */
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 16px,
+      black calc(100% - 16px),
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 16px,
+      black calc(100% - 16px),
+      transparent
+    );
+  }
+
+  .squad-center-lock {
+    min-height: 0;
+  }
+
+  /* Size container so the pitch can size itself off the stage's real
+     height/width via cq units. */
+  .pitch-stage {
+    container-type: size;
+  }
+
+  /* Fit the pitch exactly into the stage's height, keeping its aspect
+     ratio (--pitch-ar = width/height) and never exceeding the stage's
+     width — the goalkeeper can never scroll out of view. */
+  .pitch-fit {
+    height: 100cqh;
+    width: calc(100cqh * var(--pitch-ar, 0.5763));
+    max-width: 100cqw;
+    max-height: calc(100cqw / var(--pitch-ar, 0.5763));
+    /* Chips scale with the pitch (JS-measured --chip-scale) only in
+       match-center mode; everywhere else they keep their designed size. */
+    --chip-fit: var(--chip-scale, 1);
+  }
 }
 
 ::-webkit-scrollbar {

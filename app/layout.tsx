@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Archivo_Black, Barlow_Condensed, JetBrains_Mono } from "next/font/google";
+import { Archivo, Archivo_Black, Barlow_Condensed, JetBrains_Mono, Oswald } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { ValuationModal } from "@/components/ValuationModal";
@@ -30,6 +30,16 @@ const mono = JetBrains_Mono({
   weight: ["400", "500", "600"],
 });
 
+// Home-redesign display face (design/home/TransferGit Home.dc.html) — scoped
+// to the home hero/section headings via .font-oswald, not swapped in as the
+// global --font-display (Archivo Black stays the header/card default
+// everywhere else).
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: "TransferGit — The Developer Transfer Market | Get Scouted",
@@ -58,7 +68,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${display.variable} ${table.variable} ${body.variable} ${mono.variable} h-full antialiased`}
+      className={`dark ${display.variable} ${table.variable} ${body.variable} ${mono.variable} ${oswald.variable} h-full antialiased`}
     >
       <body className="min-h-dvh flex flex-col bg-pitch text-foreground">
         <ValuationModalProvider>

@@ -1,24 +1,27 @@
 <div align="center">
 
-<img src="public/transfergit/cartel.png" width="500" alt="Transfergit">
+<img src="public/transfergit/signboard.png" width="500" alt="Transfergit">
+
+<h1 align="center">transfergit</h1>
 
 **Your GitHub, valued like a football player.**
-Market value, transfer history, injuries — the whole file.
 
-[![GitHub stars](https://img.shields.io/github/stars/tobiager/transfergit?style=flat-square&color=00c853)](https://github.com/tobiager/transfergit/stargazers)
-[![License: MIT](https://img.shields.io/badge/license-MIT-1a3151?style=flat-square)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/tobiager/transfergit?style=flat-square&color=111111)](https://github.com/tobiager/transfergit/stargazers)
+[![License: MIT](https://img.shields.io/badge/license-MIT-1a3151?style=flat-square&color=111111)](LICENSE)
 [![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-Vercel-black?style=flat-square&logo=vercel)](https://transfergit.com)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ffc400?style=flat-square)](#contributing--roadmap)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ffc400?style=flat-square&color=111111)](#contributing)
 
 ### **[⚽ Get your card →](https://transfergit.com)**
 
-<a href="https://transfergit.com/torvalds"><img src="public/fan-cards/torvalds.png" width="240" alt="Transfergit"></a>
+<a href="https://transfergit.com/torvalds"><img src="https://www.transfergit.com/api/og/torvalds/portrait" width="240" alt="torvalds — Transfergit card"></a>
 
 </div>
 
 ---
 
-## Get yours in 10 seconds
+**Next.js 15 · TypeScript · Tailwind v4 · GSAP + Lenis · @vercel/og · GitHub GraphQL API**
+
+## Get your card
 
 1. Go to **[transfergit.com](https://transfergit.com)** and type your username.
 2. Hit **Copy Markdown** and paste it into your GitHub profile README.
@@ -27,9 +30,11 @@ Market value, transfer history, injuries — the whole file.
 [![Transfergit card](https://transfergit.com/api/svg/YOUR_USERNAME/readme)](https://transfergit.com/YOUR_USERNAME)
 ```
 
-That's it. Your README now has a transfer fee — the card is a live SVG, so it updates and animates on its own, no re-commit needed.
+That's it — the card is a live SVG, so it updates and animates on its own, no re-commit needed.
 
-## What you get
+## Player
+
+Every profile includes:
 
 -  **Market value in euros** — real formula, deliberately absurd inputs
 -  **Transfer history** — pulled from the orgs you've actually joined
@@ -39,7 +44,7 @@ That's it. Your README now has a transfer fee — the card is a live SVG, so it 
 -  **Season-by-season stats** — one row per year you've shown up
 -  **Rank vs. legends** — percentile tier from PROSPECT to TOP 0.1%
 -  **Hall of Fame** — see where you land next to torvalds, gaearon, and co.
--  **5 export formats** — README · Full (4:5), Player card (1:1), Player card · Portrait (3:4), Story (9:16), Banner (16:9)
+-  **5 export formats** — README · Full (4:5), Player card (1:1), Portrait (3:4), Story (9:16), Banner (16:9)
 
 <details>
   <summary><b>⚽ View TransferGit profile and market statistics (Click to expand)</b></summary>
@@ -49,7 +54,7 @@ That's it. Your README now has a transfer fee — the card is a live SVG, so it 
   </p>
 </details>
 
-## How the market value works
+### How the market value works
 
 ```
 value = 50,000
@@ -76,34 +81,39 @@ value = 50,000
 
 Is it scientific? No. Is your value higher than Messi's? Probably. ⚽
 
-## Stack & self-hosting
+## Squad
 
-**Next.js 15 · TypeScript · Tailwind v4 · GSAP + Lenis · @vercel/og · GitHub GraphQL API**
+Paste any `owner/repo` and TransferGit fields a starting XI from its contributors — ranked and valued the same
+way a player card is, then slotted onto the pitch by commit rank.
 
-```bash
-git clone https://github.com/tobiager/transfergit.git
-cd transfergit
-cp .env.example .env.local   # fill in GITHUB_TOKEN (read-only PAT, no special scopes)
-npm i && npm run dev
+- **Formations** — 4-3-3 by default, with 4-4-2 / 3-5-2 / 4-2-3-1 and a drag-and-drop custom layout
+- **Captain** — the repo's top contributor by commits
+- **Bench** — reserves beyond the starting XI
+- **Squad value** — the summed market value of every player on the pitch
+
+Try it: **`transfergit.com/squad/<owner>/<repo>`** — for example [`transfergit.com/squad/vercel/next.js`](https://transfergit.com/squad/vercel/next.js).
+
+<p align="center">
+  <a href="https://transfergit.com/squad/vercel/next.js">
+    <img src="https://www.transfergit.com/api/og/squad/vercel/next.js?format=full" width="500" alt="vercel/next.js — Repo Squad by Transfergit">
+  </a>
+</p>
+
+Embed a squad in a README the same way as a player card:
+
+```md
+[![Repo Squad by Transfergit](https://transfergit.com/api/svg/squad/OWNER/REPO)](https://transfergit.com/squad/OWNER/REPO)
 ```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tobiager/transfergit)
+## Contributing
 
-The **legends dataset** (`data/legends.json`) is a snapshot of real profiles used for percentile ranking. A daily GitHub Action (`.github/workflows/update-legends.yml`) re-fetches everyone in `data/legends-list.json` and commits the fresh snapshot — so your rank moves as legends' stats move, without anyone touching the site.
+Contributor guidelines live in [`CONTRIBUTING.md`](CONTRIBUTING.md). Deep-dive docs live in [`/docs`](docs/):
+[architecture](docs/architecture.md), [Repo Squad pipeline](docs/squad.md), [market value formula](docs/market-value.md),
+[exports](docs/exports.md), [caching & rate limits](docs/caching-and-rate-limits.md), and [formations](docs/formations.md).
 
-## Contributing + roadmap
-
-Want a legend added to the ranking? Add their username to [`data/legends-list.json`](data/legends-list.json) and open a PR — the daily Action does the rest. Easiest way to get a merged PR here.
-
-Roadmap:
-
-- [ ] Versus mode — head-to-head card comparison
-- [ ] Tournament mode — 4 / 8 / 16 / 32 player brackets
-- [ ] Global leaderboard
-- [ ] Transfer rumors generator
-- [ ] Org / team cards
-
-Looking for a place to start? Check issues labeled **[`good first issue`](https://github.com/tobiager/transfergit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)**.
+The roadmap lives in the repo's [issues](https://github.com/tobiager/transfergit/issues) — check issues labeled
+**[`good first issue`](https://github.com/tobiager/transfergit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)**
+for a place to start.
 
 ---
 

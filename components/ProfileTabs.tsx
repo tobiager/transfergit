@@ -59,7 +59,7 @@ export function ProfileTabs() {
   }
 
   return (
-    <div className="sticky top-16 z-30 border-b border-border bg-pitch/95 backdrop-blur-md">
+    <div className="sticky top-[var(--nav-h)] z-30 border-b border-border bg-pitch/95 backdrop-blur-md">
       <nav ref={navRef} className="relative mx-auto flex w-full max-w-7xl gap-1 overflow-x-auto px-4 md:px-6">
         {TABS.map((tab) => (
           <a
