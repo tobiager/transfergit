@@ -28,9 +28,14 @@ Result is rounded by `roundMarketValue` ([`lib/format.ts`](../lib/format.ts)) to
 All inputs are `ValuationInput` fields, sourced from a `GithubProfile` ([`lib/github.ts`](../lib/github.ts)) via:
 
 - **Player card** ([`lib/valuation.ts`](../lib/valuation.ts) `computeValuationTimeline`): full profile — repos,
-  contributionsCollection per year, followers.
+  contributionsCollection per year, followers — from `lib/github.ts`'s deep, year-chunked `getGithubProfile`.
 - **Repo Squad, tier 1** ([`lib/squad/valuation.ts`](../lib/squad/valuation.ts) `toContributorValuation`): the same
-  formula, fed by the same GraphQL profile fetch, called per contributor.
+  formula, but fed by a **different, deliberately lighter** fetch — `fetchLightSquadProfiles`
+  (`lib/github.ts`), which only returns followers/stars/top-language/account-age via an aliased GraphQL batch (up
+  to 10 logins per request). It never fetches per-year contribution history, so `commitsTotal`, `prsTotal`, and
+  `commitsLast12Months` are always `0` for a squad contributor — `formMultiplier` is always `1` (no "form" boost) in
+  a squad valuation. This is intentional, not a missing feature: see [`data-pipeline.md`](data-pipeline.md) for why
+  squad valuation must never go through the deep per-year pipeline the player card uses.
 
 `computeValuationTimeline` also produces a **year-by-year history** for the player card's chart — GitHub doesn't
 expose historical stars/followers, so past years use an approximation: repos already created by that year keep
@@ -51,22 +56,24 @@ still count.
 
 ## Fetching, chunking, and completeness
 
-`lib/github.ts`'s `getGithubProfile` is the one fetch/cache entrypoint every route (`/[username]`, the OG/SVG
-export routes, and squad valuation via `lib/squad/valuation.ts`'s `fetchValuation`) goes through. A profile is
-assembled from several small GraphQL requests rather than one monolithic query — see
-[`docs/architecture.md`](architecture.md) for the full chunking/bisection/caching design. Two outcomes matter for
-valuation quality:
+`lib/github.ts`'s `getGithubProfile` is the one fetch/cache entrypoint every **player-card** route (`/[username]`,
+its OG/SVG export routes) goes through — Repo Squad valuation deliberately does **not** go through it (see above).
+A profile is assembled from several small, year-chunked GraphQL requests rather than one monolithic query — see
+[`docs/data-pipeline.md`](data-pipeline.md) for the full chunking/bisection/budget-guard design. Two outcomes matter
+for valuation quality:
 
 1. **Complete** (`GithubProfile.complete === true`) — every year in GitHub's own `contributionYears` list resolved,
    plus the rolling lastYear window. Same formula, same quality as before chunking existed. Durably cached 24h.
 2. **Partial** (`complete: false`, `missingYears: number[]`) — one or more chunks never resolved even after
    rate-limit retry and cost-bisection (year → semester → quarter). Real GraphQL data for the years that DID
    resolve, `commitsTotal`/history simply reflect a smaller `contributionsByYear` — never a fabricated `0` for a
-   missing year. Only cached ~10 minutes so the next visit retries just the missing years. The player card and
-   squad valuations surface this via `Player.dataCompleteness` — see `app/[username]/page.tsx`'s partial banner.
+   missing year. Only cached 5 minutes (`RETRY_TTL_SECONDS`, `lib/github.ts`) so the next visit retries just the
+   missing years. The player card surfaces this via `Player.dataCompleteness` — see `app/[username]/page.tsx`'s
+   partial banner. This is player-card-only; squad valuation's light fetch has no equivalent completeness concept
+   (see `docs/squad.md`).
 3. **Degraded** (`degraded: true`) — GraphQL was entirely unavailable (down, or hourly points budget low); a REST
    `GET /users/{login}` (+ best-effort repos) last resort. `commitsTotal`, `prsTotal`, `commitsLast12Months` are
-   all `0` in this path, so it's a **floor value, not the real one** — cached only ~10 minutes, replaced by a full
+   all `0` in this path, so it's a **floor value, not the real one** — cached only 5 minutes, replaced by a full
    fetch as soon as GraphQL recovers.
 4. **Pending** (squad only, `—`, `marketValue: null`) — a contributor whose valuation has never once succeeded and
    has no stale cached value to fall back to. Excluded from `Squad.totalValue`, never counted as €0. A

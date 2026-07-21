@@ -9,12 +9,17 @@ estimates.
 | Layer | TTL | Where |
 |---|---|---|
 | CDN / camo (`s-maxage`, `stale-while-revalidate`) | 1h–24h (route-dependent) | Response headers on every `/api/og/*` and `/api/svg/*` route |
-| Squad assembled-roster cache (`unstable_cache`) | 6h (21,600s) | [`lib/squad/index.ts`](../lib/squad/index.ts) `getCachedValuedSquad` |
-| Per-contributor valuation cache (`unstable_cache`) | 24h | [`lib/squad/valuation.ts`](../lib/squad/valuation.ts) `cachedFetchValuation` |
-| Negative (failure) cache | 10 min | [`lib/squad/valuation.ts`](../lib/squad/valuation.ts) `cachedAttempt` |
-| Raw `fetch` cache (Next Data Cache, `next: { revalidate }`) | 24h | Every direct GitHub call in `lib/github.ts`, `lib/squad/contributors.ts` |
-| Same-process request coalescing | request lifetime | `inFlight` map in `lib/squad/valuation.ts` |
-| Same-process last-known-good | server instance lifetime | `lastKnownGood` map in `lib/squad/valuation.ts` |
+| Squad valued-roster cache (`unstable_cache`) | 6h (21,600s) | [`lib/squad/index.ts`](../lib/squad/index.ts) `getCachedValuedSquad` |
+| Squad light-profile batch cache (`unstable_cache`) | 24h | [`lib/github.ts`](../lib/github.ts) `cachedLightProfileBatch` (backs `fetchLightSquadProfiles`, used by `lib/squad/valuation.ts`'s `valuateContributors`) |
+| Player profile — complete (`unstable_cache`) | 24h | [`lib/github.ts`](../lib/github.ts) `cachedFullProfile` |
+| Player profile — partial/degraded retry cache (`unstable_cache`) | 5 min | [`lib/github.ts`](../lib/github.ts) `cachedAttemptProfile` (300s, `RETRY_TTL_SECONDS`) |
+| Per-year contribution chunk (`unstable_cache`) | 30d historical / 4h current year / 1h rolling last-year | [`lib/github.ts`](../lib/github.ts) — see [`data-pipeline.md`](data-pipeline.md) |
+| Raw `fetch` cache (Next Data Cache, `next: { revalidate }`) | 24h | `lib/squad/contributors.ts`'s REST contributors call |
+| Same-process request coalescing (profile) | request lifetime | `profileInFlight` map in `lib/github.ts` |
+| Same-process request coalescing (squad) | request lifetime | `valuedSquadInFlight` map in `lib/squad/index.ts` |
+| Same-process last-known-good (profile, complete only) | server instance lifetime | `lastKnownGoodProfile` map in `lib/github.ts` |
+| Same-process last-known-good (squad valuation) | server instance lifetime | `lastKnownGood` map in `lib/squad/valuation.ts` |
+| Process-wide GitHub request concurrency gate | n/a (not a cache — a limiter) | [`lib/githubGate.ts`](../lib/githubGate.ts) `withGithubGate`, `MAX_CONCURRENT = 3` |
 
 ## Route `Cache-Control` values
 
@@ -39,48 +44,69 @@ matter which formation each one requests. See the comment above `ValuedSquad` in
 [`lib/squad/index.ts`](../lib/squad/index.ts) for the full account, including the exact incident it fixed (page
 read €384m, banner read €7.50m off a cold, mostly-pending recompute).
 
-## Negative cache — why valuation has two `unstable_cache` layers
+## Squad valuation: light aliased batches, not per-login GraphQL
 
-A login whose GraphQL profile query deterministically trips GitHub's per-request resource limit
-(`GithubQueryTooExpensiveError`) is a cache **miss** on the 24h valuation cache every single time, since it never
-successfully writes a value. Without a second cache, every render re-paid that login's full retry+backoff cost —
-"6 fallback (of 30), identical on every render." The 10-minute negative cache (`cachedAttempt`) remembers *that an
-attempt just happened*, success or failure, so a repeat request within the window gets an instant answer; once it
-expires, `unstable_cache`'s own stale-serve-then-background-refresh retries it — "retry only what's currently
-failing, at most once per 10 minutes" without a hand-rolled scheduler.
+Older versions of this doc described a per-login GraphQL valuation pipeline (`cachedFetchValuation`,
+`fetchGraphqlValuation`, a 10-minute negative cache, `CONCURRENCY = 6`) — **that pipeline no longer exists.**
+Repo Squad valuation is `lib/squad/valuation.ts`'s `valuateContributors`, which calls `lib/github.ts`'s
+`fetchLightSquadProfiles`: up to `LIGHT_PROFILE_BATCH_SIZE = 10` logins share **one** aliased GraphQL request, and
+those batches are cached together (`cachedLightProfileBatch`, 24h) rather than per-login. See
+[`data-pipeline.md`](data-pipeline.md) for the full design and why it's a deliberately separate, lighter sibling of
+the player-card profile pipeline.
+
+A batch that hard-fails (rate limit exhausted, network error) is caught and returned as `null` rather than thrown
+— `fetchLightSquadProfiles` leaves those logins absent from its result map (not "resolved to no user"), so
+`valuateContributors` can tell "genuinely no such user" (a real `€0`, `zeroValuation`) apart from "couldn't fetch
+this time" (falls back to `lastKnownGood`, or `pendingValuation` ("—") as the last resort). There is no separate
+short-lived negative cache for squad valuation the way there is for player profiles (`cachedAttemptProfile`, 5
+min) — a failed batch simply isn't cached, so the next request (this instance's `lastKnownGood` permitting) retries
+it.
 
 ## Request coalescing and stale-on-error
 
-`lib/squad/valuation.ts` keeps two **process-local** (not durable) maps as a second line of defense, distinct from
-the durable `unstable_cache` layers:
+Two **process-local** (not durable) maps back this, distinct from the durable `unstable_cache` layers:
 
-- `inFlight` — concurrent requests for the same login during a cold render share one promise instead of firing
-  duplicate GraphQL calls.
-- `lastKnownGood` — the last valuation that actually succeeded for a login in this server instance. If both the
-  durable cache and a fresh fetch fail, this is consulted before falling back to `pendingValuation` ("—").
+- `lightBatchInFlight` (`lib/github.ts`) / `valuedSquadInFlight` (`lib/squad/index.ts`) — concurrent requests for
+  the same batch/repo during a cold render share one promise instead of firing duplicate GraphQL calls. The
+  player-card pipeline has the equivalent `profileInFlight` in `lib/github.ts`.
+- `lastKnownGood` (`lib/squad/valuation.ts`) — the last valuation that actually succeeded for a login in this
+  server instance. If both the durable cache and a fresh fetch fail, this is consulted before falling back to
+  `pendingValuation` ("—"). The player-card pipeline's equivalent, `lastKnownGoodProfile` (`lib/github.ts`), only
+  updates on a `complete` profile — see [`data-pipeline.md`](data-pipeline.md).
 
-## GitHub API budget guard
+## GitHub API budget guard and the process-wide concurrency gate
 
 `lib/github.ts` records the `x-ratelimit-remaining`/`x-ratelimit-limit` headers from every GraphQL response
-(`getLastGithubRateLimitStatus`). `lib/squad/valuation.ts`'s `fetchGraphqlValuation` checks this before starting a
-new GraphQL fetch: below **10% remaining** (`RATE_LIMIT_BUDGET_FLOOR`), it skips straight to the REST fallback
-(a separate budget) instead of risking starving every other concurrent visitor. Concurrency for the valuation
-fan-out is capped at **6** (`CONCURRENCY` in `valuation.ts`) — governs wall-clock latency, not safety, since
-GitHub has no documented hard concurrency cap below the points budget.
+(`getLastGithubRateLimitStatus`). `fetchGithubProfile` (the player-card pipeline) checks this via `budgetIsLow()`
+before starting any new GraphQL fan-out: below **10% remaining** (`RATE_LIMIT_BUDGET_FLOOR`), it throws immediately
+so the caller falls back to the REST-degraded profile instead of risking starving every other concurrent visitor.
+Squad valuation doesn't re-check the budget itself — it's a much smaller fan-out (3 GraphQL requests for a
+30-contributor squad) and shares the same guarded pipeline's headroom.
+
+Separately, **every** GitHub network call in the codebase — GraphQL chunks, REST contributor/profile lookups,
+even the navbar's star-count fetch (`lib/repoStats.ts`) — routes through `withGithubGate`
+([`lib/githubGate.ts`](../lib/githubGate.ts)), a process-wide concurrency cap (`MAX_CONCURRENT = 3`) with 50-150ms
+of jitter per acquire. This exists for GitHub's **secondary** (anti-abuse burst) rate limit, which is independent
+of the points budget above and triggers on request concurrency, not cost — see
+[`data-pipeline.md`](data-pipeline.md#primary-vs-secondary-rate-limits) for why primary and secondary limits are
+retried differently.
 
 ## Cost of a cold squad (nothing cached)
 
-Per the cost-model comment in [`lib/squad/valuation.ts`](../lib/squad/valuation.ts):
+Per the module comment in [`lib/squad/valuation.ts`](../lib/squad/valuation.ts) and `fetchLightSquadProfiles` in
+[`lib/github.ts`](../lib/github.ts):
 
 - 1 REST request total (contributors, `per_page=100`).
-- Up to 2 GraphQL requests per tier-1 player (a `createdAt` probe + the full profile query) — tier 2 (positions
-  31–100) costs nothing beyond the 1 REST call. At the 30-player tier-1 cap: **up to 60 GraphQL requests**.
-- GitHub bills GraphQL against an hourly **points** budget (5000 for a classic PAT), not a flat per-request count.
-  Measured against a real 30-contributor squad: the `createdAt` probe costs ~1 point; the full profile query costs
-  roughly 1–15+ points depending on account history.
-- Budgeting ~10 points/player worst case: a cold 30-player squad costs **~300 points, ~6% of a 5000/hour PAT** —
-  comfortably under the 10% budget-floor guard.
-- That cost is paid **at most once per day per unique `(repo, contributor)` combination**, not once per page view —
-  coalescing collapses concurrent duplicate requests, the 24h cache serves everything after the first. A single PAT
-  can cold-start on the order of 15+ distinct squads/hour while serving unlimited repeat traffic to already-cached
-  ones for free.
+- Tier 1 (up to 30 contributors) is valued via the light aliased-batch fetch: `ceil(30 / 10) = 3` GraphQL requests
+  (`LIGHT_PROFILE_BATCH_SIZE = 10`). Tier 2 (positions 31–100) costs nothing beyond the 1 REST call.
+- **1 REST request + 3 GraphQL requests = 3 GraphQL points total** for a cold 30-contributor squad (each light
+  batch request costs ~1 point) — roughly a 20x reduction from the old per-login pipeline this doc used to
+  describe, which cost up to 60 GraphQL requests for the same roster.
+- That cost is paid **at most once per day per unique repo's contributor batch**, not once per page view —
+  coalescing collapses concurrent duplicate requests, the 24h light-batch cache serves everything after the first.
+  A single PAT can cold-start on the order of hundreds of distinct squads/hour while serving unlimited repeat
+  traffic to already-cached ones for free.
+- Measured cold-load latency for a real repo (`/squad/vercel/next.js`, production build) was ~11.4-11.6s despite
+  the low request count — traced to GitHub's own edge intermittently 502'ing on the light-batch GraphQL call, with
+  no fetch timeout/retry on this codebase's side for that specific failure mode. A known, not-yet-fixed finding,
+  not a caching issue.

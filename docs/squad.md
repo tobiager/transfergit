@@ -21,12 +21,17 @@ Defined in [`lib/squad/index.ts`](../lib/squad/index.ts):
 
 | Tier | Roster positions | Valuation | Type |
 |---|---|---|---|
-| 1 | 1–30 (`TIER1_SIZE`) | Full — GraphQL profile fetch, real market value | `SquadPlayer` |
-| 2 | 31–100 | **None** — no extra API call, just login/avatar/commits from the tier-1 contributors fetch | `ReservePlayer` |
+| 1 | 1–30 (`TIER1_SIZE`) | Full — light aliased-batch GraphQL fetch, real market value | `SquadPlayer` |
+| 2 | 31–100 | **None** — no extra API call, just login/avatar/commits from the contributors REST fetch | `ReservePlayer` |
 
 Tier 2 exists purely to show "+N more contributors" without paying for 70 more GraphQL profile fetches. Reserves
-never appear on the pitch or bench, only in the reserves list/count. See [`market-value.md`](market-value.md) for
-what tier 1's valuation actually costs.
+never appear on the pitch or bench, only in the reserves list/count. `valuateContributors`
+([`lib/squad/valuation.ts`](../lib/squad/valuation.ts)) feeds tier 1 through `fetchLightSquadProfiles`
+([`lib/github.ts`](../lib/github.ts)) — a **separate, lightweight** sibling of the player card's deep per-year
+profile pipeline (see [`data-pipeline.md`](data-pipeline.md)): up to 10 logins share one aliased GraphQL request,
+no per-year contribution history is fetched at all, so `commitsTotal`/`prsTotal`/`commitsLast12Months` are always
+`0` in the valuation formula for a squad contributor. See [`market-value.md`](market-value.md) for what tier 1's
+valuation actually costs and how the formula differs from the player card's.
 
 ## 3. Formation resolution and role assignment
 
@@ -72,6 +77,17 @@ lost on a full pitch.
 `Squad`, `SquadPlayer`, `Starter`, `ReservePlayer`, `PositionSlot` — all in
 [`lib/squad/types.ts`](../lib/squad/types.ts). `Squad.pendingValuations` lists logins whose valuation fetch failed
 with no cached fallback (excluded from `totalValue`, shown as "—" in the UI, not €0).
+
+## Match center (desktop layout lock)
+
+On a wide-enough, tall-enough desktop viewport (`min-width: 1024px` and `min-height: 680px`), the `/squad` page
+locks itself to exactly one screen — navbar + a 2/3-column shell, zero page-level scroll; only the side columns
+(`.squad-scroll`) scroll internally, and the pitch (`.pitch-fit`) resizes to fit the available height/width via CSS
+container query units while preserving its aspect ratio. Short desktop windows (<680px tall) skip this entirely and
+fall back to normal page scroll so the pitch never gets compressed into illegibility. This is CSS-only
+(`app/globals.css`, `.squad-shell` / `.squad-scroll` / `.squad-center-lock` / `.pitch-fit` under the "Squad match
+center" comment block) — there's no dedicated "match center" component or route, just a layout mode of the
+existing squad page.
 
 ## Tests
 

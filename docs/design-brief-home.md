@@ -1,7 +1,37 @@
 # Design brief: home page redesign — "transfer market front page"
 
-**Status: not implemented.** This is a brief for a pending redesign of [`app/page.tsx`](../app/page.tsx), not a
-description of current code. Written so it's actionable without further context-gathering.
+**Status: implemented, but diverged from this brief.** A home-page redesign shipped (`app/page.tsx` +
+`components/home/`), and it keeps this brief's *goal* — read as a market's front page, sell both products, not
+just a calculator — but several concrete mechanisms below describe an earlier direction that was superseded during
+implementation. This file is kept as historical/aspirational context, not a living spec; **see
+[`architecture.md`](architecture.md#home-page--) for what's actually on the page today.** Notably different from
+what's written below:
+
+- No `Player | Squad` hero toggle exists. Instead there's one `OmniSearch` box
+  (`components/home/OmniSearch.tsx`) that auto-detects whether the typed query looks like a username or an
+  `owner/repo` slug (`lib/parseRepoSlug.ts`) and routes accordingly — same end goal (one hero sells both
+  products), different mechanism (detection instead of a manual toggle).
+- The hero's visual is a draggable 3D card ring (`components/home/HeroShowcase.tsx`, pre-generated card images,
+  CSS `rotateY`/`translateZ`), not the brief's `DevFan`/static-pitch-preview pairing.
+- The ticker (`components/home/SigningsTicker.tsx`) sits inside the hero block itself (fills out the "one screen"
+  hero + navbar), not moved to the very top of the page above the hero as the brief specifies.
+- "Squad of the Day" was actually built ([`components/home/SquadOfTheDay.tsx`](../components/home/SquadOfTheDay.tsx))
+  using the hand-curated-list approach this brief called out as the simplest option
+  ([`lib/squad/featuredRepos.ts`](../lib/squad/featuredRepos.ts), UTC-date hash rotation) — that part landed
+  close to spec.
+- "Most Valuable Players" ([`components/home/MostValuablePlayers.tsx`](../components/home/MostValuablePlayers.tsx))
+  also landed close to spec: top legends from `data/legends.json`, links to `/hall-of-fame`.
+- One factual note unrelated to the redesign itself: the "What exists today" section below cites
+  `.github/workflows/update-legends.yml` refreshing `data/legends.json` daily — that workflow file does not exist
+  in the repo today; only `.github/workflows/warm-squad-of-the-day.yml` does, and it warms the squad cache, not
+  the legends dataset. `npm run build:legends` currently has no automated cron trigger at all.
+
+The rest of this document is preserved as originally written, for historical context on the brief's reasoning.
+
+---
+
+**Original status line: not implemented.** This was a brief for a pending redesign of
+[`app/page.tsx`](../app/page.tsx), not a description of current code at the time it was written.
 
 ## Why
 

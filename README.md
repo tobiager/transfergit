@@ -92,7 +92,7 @@ npm i && npm run dev
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tobiager/transfergit)
 
-The **legends dataset** (`data/legends.json`) is a snapshot of real profiles used for percentile ranking. A daily GitHub Action (`.github/workflows/update-legends.yml`) re-fetches everyone in `data/legends-list.json` and commits the fresh snapshot — so your rank moves as legends' stats move, without anyone touching the site.
+The **legends dataset** (`data/legends.json`) is a snapshot of real profiles used for percentile ranking. Run `npm run build:legends` to re-fetch everyone in `data/legends-list.json` and regenerate the snapshot (no automated cron currently runs this — see [Contributing + roadmap](#contributing--roadmap) below).
 
 ## Documentation
 
@@ -103,7 +103,7 @@ guidelines live in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Contributing + roadmap
 
-Want a legend added to the ranking? Add their username to [`data/legends-list.json`](data/legends-list.json) and open a PR — the daily Action does the rest. Easiest way to get a merged PR here.
+Want a legend added to the ranking? Add their username to [`data/legends-list.json`](data/legends-list.json), run `npm run build:legends` to regenerate `data/legends.json`, and open a PR with both files changed. Easiest way to get a merged PR here.
 
 Roadmap:
 
