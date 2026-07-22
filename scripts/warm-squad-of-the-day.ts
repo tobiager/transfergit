@@ -15,9 +15,13 @@ const { owner, repo } = pickFeaturedRepo(tomorrow);
 const url = `${getSiteUrl()}/squad/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
 console.log(`Warming ${url} for tomorrow's Squad of the Day (${owner}/${repo})`);
 
-const res = await fetch(url);
-if (!res.ok) {
-  console.error(`Warm-up request failed: ${res.status} ${res.statusText}`);
-  process.exit(1);
+async function main() {
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.error(`Warm-up request failed: ${res.status} ${res.statusText}`);
+    process.exit(1);
+  }
+  console.log("Warmed successfully.");
 }
-console.log("Warmed successfully.");
+
+main();
